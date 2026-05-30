@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AssemblyName>AmbientContext.Core</AssemblyName>
-    <PackageId>AmbientContext</PackageId>
+    <PackageId>MarsArmories.AmbientContext</PackageId>
     <Title>AmbientContext</Title>
     <Description>Strongly typed ambient context wrappers over AsyncLocal&lt;T&gt; with source-generated named APIs.</Description>
     <PackageTags>ambient-context;asynclocal;source-generator;dependency-injection;dotnet</PackageTags>

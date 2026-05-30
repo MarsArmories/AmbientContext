@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <PackageId>AmbientContext.Analyzers</PackageId>
+    <PackageId>MarsArmories.AmbientContext.Analyzers</PackageId>
     <Title>AmbientContext Analyzers</Title>
     <Description>Roslyn analyzers for AmbientContext usage patterns.</Description>
     <PackageTags>ambient-context;analyzer;roslyn;asynclocal;dotnet</PackageTags>

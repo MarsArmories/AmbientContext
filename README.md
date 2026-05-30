@@ -123,9 +123,19 @@ AmbientContextFlow.SuppressFor(() =>
 
 ## Analyzer Warnings
 
-`AmbientContext.Analyzers` reports obvious fire-and-forget scheduling inside `ExecuteAs*Async` lambdas:
+`AmbientContext.Analyzers` reports obvious fire-and-forget scheduling inside `ExecuteAs*Async` lambdas.
 
-* `AC0001`: Fire-and-forget work created inside ambient context scope.
-* `AC0002`: `Task.Run` used inside ambient context scope without flow suppression.
-* `AC0003`: `ThreadPool.QueueUserWorkItem` used inside ambient context scope without flow suppression.
-* `AC0004`: `Task.Factory.StartNew` used inside ambient context scope without flow suppression.
+The current analyzer rule inventory is maintained in:
+
+* `src/AmbientContext.Analyzers/AnalyzerReleases.Shipped.md`
+* `src/AmbientContext.Analyzers/AnalyzerReleases.Unshipped.md`
+
+Generator diagnostics are maintained in `src/AmbientContext.Generators/GeneratorDiagnostics.md`.
+
+## Observability
+
+AmbientContext does not emit OpenTelemetry spans, scopes, or metrics by default.
+
+Ambient values are often tenant, client, user, correlation, or workflow identifiers. Automatically attaching those values to spans or meter tags can create high-cardinality telemetry, increase export cost, and accidentally expose sensitive application data.
+
+Prefer adding metrics and spans at the application boundary where the ambient value has domain meaning. Consumer code can read generated accessors such as `IClientIdAccessor` and decide which values are safe to record, which should be hashed or bucketed, and which should never leave process memory.

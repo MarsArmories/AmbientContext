@@ -78,7 +78,7 @@ public sealed class AmbientContextGeneratorTests
             [assembly: AmbientContext(typeof(Guid), "123ClientId")]
             """);
 
-        result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("ACGEN001");
+        result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("MAACGEN001");
     }
 
     [TestMethod]
@@ -92,7 +92,7 @@ public sealed class AmbientContextGeneratorTests
             [assembly: AmbientContext(typeof(string), "ClientId")]
             """);
 
-        result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("ACGEN002");
+        result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("MAACGEN002");
     }
 
     [TestMethod]
@@ -105,7 +105,7 @@ public sealed class AmbientContextGeneratorTests
             [assembly: AmbientContext(typeof(Guid?), "ClientId")]
             """);
 
-        result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("ACGEN003");
+        result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("MAACGEN003");
     }
 
     [TestMethod]

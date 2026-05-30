@@ -1,4 +1,4 @@
-<Project Sdk="MSTest.Sdk/4.2.3">
+<Project Sdk="MSTest.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\AmbientContext.Abstractions\AmbientContext.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\AmbientContext.Core\AmbientContext.Core.csproj" />

@@ -5,7 +5,7 @@ namespace AmbientContext.Analyzers;
 internal static class AmbientContextAnalyzerDiagnosticDescriptors
 {
     public static readonly DiagnosticDescriptor FireAndForget = new(
-        "AC0001",
+        "MAAC0001",
         "Fire-and-forget work created inside ambient context scope",
         "Fire-and-forget work created inside an ambient context scope may capture AsyncLocal context",
         "AmbientContext",
@@ -13,7 +13,7 @@ internal static class AmbientContextAnalyzerDiagnosticDescriptors
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor TaskRun = new(
-        "AC0002",
+        "MAAC0002",
         "Task.Run used inside ambient context scope",
         "Task.Run inside an ambient context scope should be scheduled within ExecutionContext.SuppressFlow or AmbientContextFlow.SuppressFor",
         "AmbientContext",
@@ -21,7 +21,7 @@ internal static class AmbientContextAnalyzerDiagnosticDescriptors
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor ThreadPoolQueue = new(
-        "AC0003",
+        "MAAC0003",
         "ThreadPool work item queued inside ambient context scope",
         "ThreadPool.QueueUserWorkItem inside an ambient context scope should be scheduled within ExecutionContext.SuppressFlow or AmbientContextFlow.SuppressFor",
         "AmbientContext",
@@ -29,7 +29,7 @@ internal static class AmbientContextAnalyzerDiagnosticDescriptors
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor TaskFactoryStartNew = new(
-        "AC0004",
+        "MAAC0004",
         "Task.Factory.StartNew used inside ambient context scope",
         "Task.Factory.StartNew inside an ambient context scope should be scheduled within ExecutionContext.SuppressFlow or AmbientContextFlow.SuppressFor",
         "AmbientContext",

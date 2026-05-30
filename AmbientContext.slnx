@@ -15,13 +15,25 @@
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="AmbientContext.slnx" />
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
     <File Path="Directory.Packages.props" />
+    <File Path="eng/Version.props" />
     <File Path="global.json" />
     <File Path="LICENSE" />
     <File Path="README.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="SECURITY.md" />
+  </Folder>
+  <Folder Name="/Diagnostics/Analyzers/">
+    <File Path="src/AmbientContext.Analyzers/AnalyzerReleases.Shipped.md" />
+    <File Path="src/AmbientContext.Analyzers/AnalyzerReleases.Unshipped.md" />
+  </Folder>
+  <Folder Name="/Diagnostics/Generators/">
+    <File Path="src/AmbientContext.Generators/GeneratorDiagnostics.md" />
   </Folder>
   <Folder Name="/Build/GitHub/">
     <File Path=".github/dependabot.yml" />

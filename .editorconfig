@@ -13,8 +13,8 @@ indent_size = 4
 # Prefer modern file-scoped namespaces throughout the codebase.
 csharp_style_namespace_declarations = file_scoped:warning
 
-# Primary constructors are useful in the right spots, but should be a deliberate design choice.
-csharp_style_prefer_primary_constructors = false:suggestion
+# Prefer primary constructors when they improve clarity; keep this as a suggestion so public API design stays deliberate.
+csharp_style_prefer_primary_constructors = true:suggestion
 
 # Modern C# expression preferences.
 csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
@@ -51,3 +51,18 @@ dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggesti
 # Keep test names descriptive without fighting analyzer naming rules.
 [test/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
+
+[*.{csproj,props,targets,slnx,xml}]
+indent_style = space
+indent_size = 2
+
+[*.{json,jsonc}]
+indent_style = space
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

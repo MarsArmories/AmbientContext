@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AssemblyName>AmbientContext.Core</AssemblyName>
     <PackageId>AmbientContext</PackageId>
     <Title>AmbientContext</Title>
     <Description>Strongly typed ambient context wrappers over AsyncLocal&lt;T&gt; with source-generated named APIs.</Description>
     <PackageTags>ambient-context;asynclocal;source-generator;dependency-injection;dotnet</PackageTags>
     <IsPackable>true</IsPackable>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <ArtifactsConfiguration>$([System.String]::Copy('$(Configuration)').ToLowerInvariant())</ArtifactsConfiguration>
   </PropertyGroup>
   <ItemGroup>
@@ -19,7 +19,9 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
     <None Include="$(ArtifactsPath)\bin\AmbientContext.Generators\$(ArtifactsConfiguration)\AmbientContext.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
-    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)\AmbientContext.Abstractions.dll" Pack="true" PackagePath="lib/$(TargetFramework)/" Visible="false" />
-    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)\AmbientContext.Abstractions.xml" Pack="true" PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)_net8.0\AmbientContext.Abstractions.dll" Pack="true" PackagePath="lib/net8.0/" Visible="false" />
+    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)_net8.0\AmbientContext.Abstractions.xml" Pack="true" PackagePath="lib/net8.0/" Visible="false" />
+    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)_net10.0\AmbientContext.Abstractions.dll" Pack="true" PackagePath="lib/net10.0/" Visible="false" />
+    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)_net10.0\AmbientContext.Abstractions.xml" Pack="true" PackagePath="lib/net10.0/" Visible="false" />
   </ItemGroup>
 </Project>

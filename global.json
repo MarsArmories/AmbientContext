@@ -1,8 +1,13 @@
 {
   "sdk": {
     "version": "10.0.300",
-    "rollForward": "latestMajor",
-    "allowPrerelease": true
+    "rollForward": "latestFeature",
+    "allowPrerelease": false,
+    "paths": [
+      ".dotnet",
+      "$host$"
+    ],
+    "errorMessage": "Required .NET SDK not found. Install .NET SDK 10.0.300 or later, or place a compatible SDK under .dotnet."
   },
   "test": {
     "runner": "Microsoft.Testing.Platform"

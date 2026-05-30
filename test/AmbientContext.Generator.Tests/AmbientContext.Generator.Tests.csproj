@@ -1,0 +1,11 @@
+<Project Sdk="MSTest.Sdk/4.2.3">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AmbientContext.Abstractions\AmbientContext.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\AmbientContext.Core\AmbientContext.Core.csproj" />
+    <ProjectReference Include="..\..\src\AmbientContext.Generators\AmbientContext.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <ProjectReference Include="..\..\src\AmbientContext.Generators\AmbientContext.Generators.csproj" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

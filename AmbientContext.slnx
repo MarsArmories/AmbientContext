@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="src/AmbientContext.Abstractions/AmbientContext.Abstractions.csproj" />
+  <Project Path="src/AmbientContext.Core/AmbientContext.Core.csproj" />
+  <Project Path="src/AmbientContext.Generators/AmbientContext.Generators.csproj" />
+  <Project Path="src/AmbientContext.Analyzers/AmbientContext.Analyzers.csproj" />
+  <Project Path="test/AmbientContext.Tests/AmbientContext.Tests.csproj" />
+  <Project Path="test/AmbientContext.Generator.Tests/AmbientContext.Generator.Tests.csproj" />
+  <Project Path="test/AmbientContext.Analyzer.Tests/AmbientContext.Analyzer.Tests.csproj" />
+  <Project Path="samples/AmbientContext.Sample/AmbientContext.Sample.csproj" />
+</Solution>

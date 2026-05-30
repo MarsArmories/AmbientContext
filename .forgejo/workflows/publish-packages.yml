@@ -1,0 +1,49 @@
+name: Publish Packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish-forgejo:
+    name: Publish to Forgejo Packages
+    runs-on: docker
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:10.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore
+        run: dotnet restore AmbientContext.slnx
+
+      - name: Build
+        run: dotnet build AmbientContext.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test AmbientContext.slnx --configuration Release --no-build
+
+      - name: Pack
+        run: dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release
+
+      - name: Publish packages
+        env:
+          NUGET_API_KEY: ${{ secrets.FORGEJO_TOKEN }}
+          FORGEJO_SERVER_URL: ${{ github.server_url }}
+          FORGEJO_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          source_url="${FORGEJO_SERVER_URL}/api/packages/${FORGEJO_REPOSITORY_OWNER}/nuget/index.json"
+
+          for package in artifacts/package/release/*.nupkg; do
+            dotnet nuget push "$package" --source "$source_url" --api-key "$NUGET_API_KEY" --skip-duplicate --no-symbols
+          done
+
+          for symbols in artifacts/package/release/*.snupkg; do
+            [ -e "$symbols" ] || continue
+            dotnet nuget push "$symbols" --source "$source_url" --api-key "$NUGET_API_KEY" --skip-duplicate
+          done

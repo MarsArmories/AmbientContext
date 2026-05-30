@@ -1,0 +1,56 @@
+name: Publish Packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-github:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore AmbientContext.slnx
+
+      - name: Build
+        run: dotnet build AmbientContext.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test AmbientContext.slnx --configuration Release --no-build
+
+      - name: Pack
+        run: dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release
+
+      - name: Publish packages
+        env:
+          NUGET_SOURCE: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+          NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for package in artifacts/package/release/*.nupkg; do
+            dotnet nuget push "$package" --source "$NUGET_SOURCE" --api-key "$NUGET_API_KEY" --skip-duplicate --no-symbols
+          done
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: |
+            artifacts/package/release/*.nupkg
+            artifacts/package/release/*.snupkg

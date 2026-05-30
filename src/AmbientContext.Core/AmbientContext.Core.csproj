@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>AmbientContext.Core</AssemblyName>
+    <PackageId>AmbientContext</PackageId>
+    <Title>AmbientContext</Title>
+    <Description>Strongly typed ambient context wrappers over AsyncLocal&lt;T&gt; with source-generated named APIs.</Description>
+    <PackageTags>ambient-context;asynclocal;source-generator;dependency-injection;dotnet</PackageTags>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <ArtifactsConfiguration>$([System.String]::Copy('$(Configuration)').ToLowerInvariant())</ArtifactsConfiguration>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AmbientContext.Abstractions\AmbientContext.Abstractions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\AmbientContext.Generators\AmbientContext.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="$(ArtifactsPath)\bin\AmbientContext.Generators\$(ArtifactsConfiguration)\AmbientContext.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
+    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)\AmbientContext.Abstractions.dll" Pack="true" PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)\AmbientContext.Abstractions.xml" Pack="true" PackagePath="lib/$(TargetFramework)/" Visible="false" />
+  </ItemGroup>
+</Project>

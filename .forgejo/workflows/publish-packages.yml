@@ -1,4 +1,5 @@
 name: Publish Packages
+run-name: Publish packages from ${{ github.ref_name }}
 
 on:
   push:
@@ -19,16 +20,25 @@ jobs:
           fetch-depth: 0
 
       - name: Restore
-        run: dotnet restore AmbientContext.slnx
+        run: |
+          echo "==> Restoring AmbientContext"
+          dotnet restore AmbientContext.slnx
 
       - name: Build
-        run: dotnet build AmbientContext.slnx --configuration Release --no-restore
+        run: |
+          echo "==> Building AmbientContext"
+          dotnet build AmbientContext.slnx --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test AmbientContext.slnx --configuration Release --no-build
+      - name: Test with coverage
+        run: |
+          echo "==> Testing AmbientContext with coverage"
+          mkdir -p artifacts/test-results
+          dotnet test AmbientContext.slnx --configuration Release --no-build --coverage --coverage-output artifacts/test-results/coverage.cobertura.xml --coverage-output-format cobertura
 
       - name: Pack
-        run: dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release
+        run: |
+          echo "==> Packing AmbientContext"
+          dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release
 
       - name: Publish packages
         env:
@@ -47,3 +57,16 @@ jobs:
             [ -e "$symbols" ] || continue
             dotnet nuget push "$symbols" --source "$source_url" --api-key "$NUGET_API_KEY" --skip-duplicate
           done
+
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              echo "## AmbientContext Package Publish"
+              echo
+              echo "| Check | Result |"
+              echo "| --- | --- |"
+              echo "| Build | complete |"
+              echo "| Tests | complete |"
+              echo "| Coverage | written under each test assembly TestResults folder |"
+              echo "| Packages | pushed to Forgejo registry |"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

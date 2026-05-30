@@ -33,7 +33,7 @@ public sealed class AmbientContextAnalyzerTests
             }
             """);
 
-        diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("AC0002");
+        diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("MAAC0002");
     }
 
     [TestMethod]
@@ -114,7 +114,7 @@ public sealed class AmbientContextAnalyzerTests
             }
             """);
 
-        diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("AC0003");
+        diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("MAAC0003");
     }
 
     [TestMethod]
@@ -138,7 +138,7 @@ public sealed class AmbientContextAnalyzerTests
             }
             """);
 
-        diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("AC0004");
+        diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("MAAC0004");
     }
 
     [TestMethod]

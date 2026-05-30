@@ -1,4 +1,7 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)eng\Version.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)eng\Version.props')" />
+
   <PropertyGroup>
     <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
     <LangVersion>preview</LangVersion>

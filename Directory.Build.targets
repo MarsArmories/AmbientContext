@@ -1,0 +1,14 @@
+<Project>
+  <Target Name="ValidatePackageMetadata"
+          BeforeTargets="Pack"
+          Condition="'$(IsPackable)' == 'true'">
+    <Error Condition="'$(PackageId)' == ''"
+           Text="PackageId must be set for packable projects." />
+    <Error Condition="'$(Description)' == ''"
+           Text="Description must be set for packable projects." />
+    <Error Condition="'$(RepositoryUrl)' == ''"
+           Text="RepositoryUrl must be set for packable projects." />
+    <Error Condition="'$(PackageLicenseExpression)' == '' and '$(PackageLicenseFile)' == ''"
+           Text="PackageLicenseExpression or PackageLicenseFile must be set for packable projects." />
+  </Target>
+</Project>

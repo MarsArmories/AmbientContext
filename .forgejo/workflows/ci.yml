@@ -1,4 +1,5 @@
-name: CI
+name: Continuous Integration
+run-name: CI for ${{ github.ref_name }}
 
 on:
   push:
@@ -19,10 +20,29 @@ jobs:
           fetch-depth: 0
 
       - name: Restore
-        run: dotnet restore AmbientContext.slnx
+        run: |
+          echo "==> Restoring AmbientContext"
+          dotnet restore AmbientContext.slnx
 
       - name: Build
-        run: dotnet build AmbientContext.slnx --configuration Release --no-restore
+        run: |
+          echo "==> Building AmbientContext"
+          dotnet build AmbientContext.slnx --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test AmbientContext.slnx --configuration Release --no-build
+      - name: Test with coverage
+        run: |
+          echo "==> Testing AmbientContext with coverage"
+          mkdir -p artifacts/test-results
+          dotnet test AmbientContext.slnx --configuration Release --no-build --coverage --coverage-output artifacts/test-results/coverage.cobertura.xml --coverage-output-format cobertura
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              echo "## AmbientContext CI"
+              echo
+              echo "| Check | Result |"
+              echo "| --- | --- |"
+              echo "| Restore | complete |"
+              echo "| Build | complete |"
+              echo "| Tests | complete |"
+              echo "| Coverage | written under each test assembly TestResults folder |"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

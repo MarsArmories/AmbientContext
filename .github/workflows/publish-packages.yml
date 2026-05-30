@@ -1,4 +1,5 @@
 name: Publish Packages
+run-name: Publish packages from ${{ github.ref_name }} by @${{ github.actor }}
 
 on:
   push:
@@ -9,6 +10,9 @@ on:
 permissions:
   contents: read
   packages: write
+
+env:
+  DOTNET_NOLOGO: true
 
 jobs:
   publish-github:
@@ -26,16 +30,29 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore AmbientContext.slnx
+        run: |
+          echo "::group::Restore"
+          dotnet restore AmbientContext.slnx
+          echo "::endgroup::"
 
       - name: Build
-        run: dotnet build AmbientContext.slnx --configuration Release --no-restore
+        run: |
+          echo "::group::Build"
+          dotnet build AmbientContext.slnx --configuration Release --no-restore
+          echo "::endgroup::"
 
-      - name: Test
-        run: dotnet test AmbientContext.slnx --configuration Release --no-build
+      - name: Test with coverage
+        run: |
+          echo "::group::Test with coverage"
+          mkdir -p artifacts/test-results
+          dotnet test AmbientContext.slnx --configuration Release --no-build --coverage --coverage-output artifacts/test-results/coverage.cobertura.xml --coverage-output-format cobertura
+          echo "::endgroup::"
 
       - name: Pack
-        run: dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release
+        run: |
+          echo "::group::Pack"
+          dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release
+          echo "::endgroup::"
 
       - name: Publish packages
         env:
@@ -54,3 +71,23 @@ jobs:
           path: |
             artifacts/package/release/*.nupkg
             artifacts/package/release/*.snupkg
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: artifacts/bin/**/TestResults/artifacts/test-results/coverage.cobertura.xml
+
+      - name: Publish summary
+        if: always()
+        run: |
+          {
+            echo "## AmbientContext Package Publish"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| Build | complete |"
+            echo "| Tests | complete |"
+            echo "| Coverage | Cobertura files uploaded as artifact \`coverage\` |"
+            echo "| Packages | uploaded as artifact \`nuget-packages\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

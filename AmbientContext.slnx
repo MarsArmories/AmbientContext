@@ -1,10 +1,35 @@
 <Solution>
-  <Project Path="src/AmbientContext.Abstractions/AmbientContext.Abstractions.csproj" />
-  <Project Path="src/AmbientContext.Core/AmbientContext.Core.csproj" />
-  <Project Path="src/AmbientContext.Generators/AmbientContext.Generators.csproj" />
-  <Project Path="src/AmbientContext.Analyzers/AmbientContext.Analyzers.csproj" />
-  <Project Path="test/AmbientContext.Tests/AmbientContext.Tests.csproj" />
-  <Project Path="test/AmbientContext.Generator.Tests/AmbientContext.Generator.Tests.csproj" />
-  <Project Path="test/AmbientContext.Analyzer.Tests/AmbientContext.Analyzer.Tests.csproj" />
-  <Project Path="samples/AmbientContext.Sample/AmbientContext.Sample.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/AmbientContext.Abstractions/AmbientContext.Abstractions.csproj" />
+    <Project Path="src/AmbientContext.Core/AmbientContext.Core.csproj" />
+    <Project Path="src/AmbientContext.Generators/AmbientContext.Generators.csproj" />
+    <Project Path="src/AmbientContext.Analyzers/AmbientContext.Analyzers.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/AmbientContext.Tests/AmbientContext.Tests.csproj" />
+    <Project Path="test/AmbientContext.Generator.Tests/AmbientContext.Generator.Tests.csproj" />
+    <Project Path="test/AmbientContext.Analyzer.Tests/AmbientContext.Analyzer.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/AmbientContext.Sample/AmbientContext.Sample.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="AmbientContext.slnx" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Build/GitHub/">
+    <File Path=".github/dependabot.yml" />
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/publish-packages.yml" />
+  </Folder>
+  <Folder Name="/Build/Forgejo/">
+    <File Path=".forgejo/workflows/ci.yml" />
+    <File Path=".forgejo/workflows/publish-packages.yml" />
+  </Folder>
 </Solution>

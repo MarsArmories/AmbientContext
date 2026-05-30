@@ -12,7 +12,6 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <IsPackable>true</IsPackable>
     <IncludeSymbols>false</IncludeSymbols>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <NoWarn>$(NoWarn);RS2008</NoWarn>
   </PropertyGroup>

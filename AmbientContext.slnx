@@ -38,6 +38,7 @@
   <Folder Name="/Build/GitHub/">
     <File Path=".github/dependabot.yml" />
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/publish-nuget-org.yml" />
     <File Path=".github/workflows/publish-packages.yml" />
   </Folder>
   <Folder Name="/Build/Forgejo/">

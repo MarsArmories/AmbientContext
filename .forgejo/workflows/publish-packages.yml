@@ -13,7 +13,7 @@ concurrency:
 jobs:
   publish-forgejo:
     name: Publish to Forgejo Packages
-    runs-on: docker
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4

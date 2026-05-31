@@ -19,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -68,7 +68,7 @@ jobs:
 
       - name: Upload pull request prerelease artifacts
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prerelease-packages-pr-${{ github.event.pull_request.number }}
           retention-days: 7
@@ -77,7 +77,7 @@ jobs:
             artifacts/package/prerelease/*.snupkg
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: artifacts/bin/**/TestResults/artifacts/test-results/coverage.cobertura.xml

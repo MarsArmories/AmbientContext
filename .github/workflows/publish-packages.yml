@@ -5,7 +5,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,6 +12,10 @@ permissions:
 
 env:
   DOTNET_NOLOGO: true
+
+concurrency:
+  group: github-packages-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   publish-github:
@@ -29,6 +32,26 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Resolve package version from tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+          if [ "$RELEASE_REF_TYPE" != "tag" ]; then
+            echo "::error::Package publication requires a tag."
+            exit 1
+          fi
+
+          package_version="${RELEASE_TAG#v}"
+          if ! printf '%s' "$package_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$'; then
+            echo "::error::Tag '$RELEASE_TAG' is not a supported SemVer release tag."
+            exit 1
+          fi
+
+          echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
+          echo "Publishing package version: $package_version"
+
       - name: Restore
         run: |
           echo "::group::Restore"
@@ -38,7 +61,7 @@ jobs:
       - name: Build
         run: |
           echo "::group::Build"
-          dotnet build AmbientContext.slnx --configuration Release --no-restore
+          dotnet build AmbientContext.slnx --configuration Release --no-restore -p:Version="$PACKAGE_VERSION" -p:InformationalVersion="$PACKAGE_VERSION"
           echo "::endgroup::"
 
       - name: Test with coverage
@@ -51,8 +74,14 @@ jobs:
       - name: Pack
         run: |
           echo "::group::Pack"
-          dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release
+          dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release -p:Version="$PACKAGE_VERSION"
           echo "::endgroup::"
+
+      - name: Validate package artifacts
+        run: |
+          set -euo pipefail
+          test -f "artifacts/package/release/MarsArmories.AmbientContext.${PACKAGE_VERSION}.nupkg"
+          test -f "artifacts/package/release/MarsArmories.AmbientContext.Analyzers.${PACKAGE_VERSION}.nupkg"
 
       - name: Publish packages
         env:
@@ -61,7 +90,7 @@ jobs:
         run: |
           set -euo pipefail
           for package in artifacts/package/release/*.nupkg; do
-            dotnet nuget push "$package" --source "$NUGET_SOURCE" --api-key "$NUGET_API_KEY" --skip-duplicate --no-symbols
+            dotnet nuget push "$package" --source "$NUGET_SOURCE" --api-key "$NUGET_API_KEY" --no-symbols
           done
 
       - name: Upload package artifacts

@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 env:
   DOTNET_NOLOGO: true
@@ -86,9 +87,15 @@ jobs:
           test -f "artifacts/package/release/MarsArmories.AmbientContext.${PACKAGE_VERSION}.nupkg"
           test -f "artifacts/package/release/MarsArmories.AmbientContext.Analyzers.${PACKAGE_VERSION}.nupkg"
 
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Publish packages
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
           set -euo pipefail
           for package in artifacts/package/release/*.nupkg; do

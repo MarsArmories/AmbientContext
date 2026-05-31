@@ -11,13 +11,28 @@ jobs:
   build-test:
     name: Build and test
     runs-on: docker
-    container:
-      image: mcr.microsoft.com/dotnet/sdk:10.0
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Define pull request prerelease version
+        if: forgejo.event_name == 'pull_request'
+        id: prerelease
+        env:
+          PR_NUMBER: ${{ forgejo.event.pull_request.number }}
+        run: |
+          set -eu
+          short_sha="$(printf '%s' "$GITHUB_SHA" | cut -c1-7)"
+          suffix="pr.${PR_NUMBER}.${short_sha}"
+          echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
+          echo "==> Packing prerelease version suffix: $suffix"
 
       - name: Restore
         run: |
@@ -27,13 +42,33 @@ jobs:
       - name: Build
         run: |
           echo "==> Building AmbientContext"
-          dotnet build AmbientContext.slnx --configuration Release --no-restore
+          dotnet build AmbientContext.slnx --configuration Release --no-restore -p:VersionSuffix="${{ steps.prerelease.outputs.suffix }}"
 
       - name: Test with coverage
         run: |
           echo "==> Testing AmbientContext with coverage"
           mkdir -p artifacts/test-results
           dotnet test AmbientContext.slnx --configuration Release --no-build --coverage --coverage-output artifacts/test-results/coverage.cobertura.xml --coverage-output-format cobertura
+
+      - name: Pack pull request prerelease artifacts
+        if: forgejo.event_name == 'pull_request'
+        run: |
+          echo "==> Packing pull request prerelease artifacts"
+          dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/prerelease --version-suffix "${{ steps.prerelease.outputs.suffix }}"
+
+      - name: Upload pull request prerelease artifacts
+        if: forgejo.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prerelease-packages-pr-${{ forgejo.event.pull_request.number }}
+          retention-days: 7
+          path: |
+            artifacts/package/prerelease/*.nupkg
+            artifacts/package/prerelease/*.snupkg
+
+      - name: Build summary
+        if: always()
+        run: |
           if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
             {
               echo "## AmbientContext CI"
@@ -44,5 +79,8 @@ jobs:
               echo "| Build | complete |"
               echo "| Tests | complete |"
               echo "| Coverage | written under each test assembly TestResults folder |"
+              if [ "${{ forgejo.event_name }}" = "pull_request" ]; then
+                echo "| PR packages | prerelease artifacts uploaded without registry publication |"
+              fi
             } >> "$GITHUB_STEP_SUMMARY"
           fi

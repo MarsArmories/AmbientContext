@@ -94,7 +94,7 @@ jobs:
           done
 
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
           path: |
@@ -102,7 +102,7 @@ jobs:
             artifacts/package/release/*.snupkg
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: artifacts/bin/**/TestResults/artifacts/test-results/coverage.cobertura.xml

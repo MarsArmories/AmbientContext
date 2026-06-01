@@ -1,7 +1,7 @@
 # AmbientContext
 
 [![CI](https://github.com/MarsArmories/AmbientContext/actions/workflows/ci.yml/badge.svg)](https://github.com/MarsArmories/AmbientContext/actions/workflows/ci.yml)
-[![NuGet](https://img.shields.io/nuget/vpre/MarsArmories.AmbientContext.svg)](https://www.nuget.org/packages/MarsArmories.AmbientContext)
+[![NuGet](https://img.shields.io/nuget/v/MarsArmories.AmbientContext.svg)](https://www.nuget.org/packages/MarsArmories.AmbientContext)
 
 AmbientContext is a .NET 8 and .NET 10 library for strongly typed ambient values over `AsyncLocal<T>`. The runtime owns the scoped state, while the source generator creates named APIs such as `ClientIdContext`, `TenantIdContext`, and typed accessors.
 
@@ -10,15 +10,15 @@ AmbientContext is a .NET 8 and .NET 10 library for strongly typed ambient values
 Install the [MarsArmories.AmbientContext](https://www.nuget.org/packages/MarsArmories.AmbientContext) package:
 
 ```shell
-dotnet package add MarsArmories.AmbientContext --prerelease
+dotnet package add MarsArmories.AmbientContext
 ```
 
-The package includes the source generator. While AmbientContext is in preview, use `--prerelease` or specify an exact prerelease version.
+The package includes the source generator.
 
 Install the optional [MarsArmories.AmbientContext.Analyzers](https://www.nuget.org/packages/MarsArmories.AmbientContext.Analyzers) package for diagnostics around fire-and-forget work:
 
 ```shell
-dotnet package add MarsArmories.AmbientContext.Analyzers --prerelease
+dotnet package add MarsArmories.AmbientContext.Analyzers
 ```
 
 ## Basic Usage

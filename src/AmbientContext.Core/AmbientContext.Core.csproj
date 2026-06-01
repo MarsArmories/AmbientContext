@@ -17,6 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
     <None Include="$(ArtifactsPath)\bin\AmbientContext.Generators\$(ArtifactsConfiguration)\AmbientContext.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/cs/" Visible="false" />
     <None Include="$(ArtifactsPath)\bin\AmbientContext.Abstractions\$(ArtifactsConfiguration)_net8.0\AmbientContext.Abstractions.dll" Pack="true" PackagePath="lib/net8.0/" Visible="false" />

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -18,6 +19,10 @@ namespace AmbientContext.Generators;
 public sealed class AmbientContextGenerator : IIncrementalGenerator
 {
     private const string AttributeMetadataName = "AmbientContext.Abstractions.AmbientContextAttribute";
+    private static readonly string GeneratorVersion =
+        typeof(AmbientContextGenerator).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion ?? "unknown";
 
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -197,7 +202,7 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             /// <summary>
             /// Marker type used to isolate {{model.Name}} ambient context state.
             /// </summary>
-            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "0.1.0")]
+            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
             public sealed class {{markerName}}
             {
@@ -206,7 +211,7 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             /// <summary>
             /// Reads the current {{model.Name}} ambient value.
             /// </summary>
-            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "0.1.0")]
+            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             public interface {{accessorInterfaceName}}
             {
                 /// <summary>
@@ -235,7 +240,7 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             /// <summary>
             /// Default implementation of <see cref="{{accessorInterfaceName}}"/>.
             /// </summary>
-            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "0.1.0")]
+            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
             public sealed class {{accessorName}} : {{accessorInterfaceName}}
             {
@@ -265,7 +270,7 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             /// <summary>
             /// Runs delegates inside a scoped {{model.Name}} ambient value.
             /// </summary>
-            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "0.1.0")]
+            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
             public sealed class {{contextName}}
             {
@@ -346,7 +351,7 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             /// <summary>
             /// Provides dependency injection registration helpers for the {{model.Name}} ambient context.
             /// </summary>
-            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "0.1.0")]
+            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
             public static class {{serviceCollectionExtensionsName}}
             {

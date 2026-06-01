@@ -10,5 +10,7 @@
            Text="RepositoryUrl must be set for packable projects." />
     <Error Condition="'$(PackageLicenseExpression)' == '' and '$(PackageLicenseFile)' == ''"
            Text="PackageLicenseExpression or PackageLicenseFile must be set for packable projects." />
+    <Error Condition="'$(PackageReleaseNotes)' == ''"
+           Text="PackageReleaseNotes must be set for packable projects." />
   </Target>
 </Project>

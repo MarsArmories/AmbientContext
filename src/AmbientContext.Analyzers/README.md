@@ -1,6 +1,6 @@
 # AmbientContext Analyzers
 
-[![NuGet](https://img.shields.io/nuget/vpre/MarsArmories.AmbientContext.Analyzers.svg)](https://www.nuget.org/packages/MarsArmories.AmbientContext.Analyzers)
+[![NuGet](https://img.shields.io/nuget/v/MarsArmories.AmbientContext.Analyzers.svg)](https://www.nuget.org/packages/MarsArmories.AmbientContext.Analyzers)
 
 `MarsArmories.AmbientContext.Analyzers` provides optional Roslyn diagnostics for projects that use [MarsArmories.AmbientContext](https://www.nuget.org/packages/MarsArmories.AmbientContext).
 
@@ -11,18 +11,16 @@ The analyzers identify obvious fire-and-forget scheduling inside generated `Exec
 Install the package in projects where you want the diagnostics to run:
 
 ```shell
-dotnet package add MarsArmories.AmbientContext.Analyzers --prerelease
+dotnet package add MarsArmories.AmbientContext.Analyzers
 ```
 
 For direct project references, keep the analyzer private to the consuming project:
 
 ```xml
 <PackageReference Include="MarsArmories.AmbientContext.Analyzers"
-                  Version="0.1.0-alpha.2"
+                  Version="1.0.0"
                   PrivateAssets="all" />
 ```
-
-While AmbientContext is in preview, use `--prerelease` or specify an exact prerelease version.
 
 ## Diagnostics
 

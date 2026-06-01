@@ -24,3 +24,8 @@ Security fixes may be released as patched NuGet packages and documented through 
 ## Supported Versions
 
 Only the latest published stable package line receives security fixes unless a separate support policy is announced.
+
+| Version | Supported |
+| --- | --- |
+| 1.x | Yes |
+| 0.x prereleases | No |

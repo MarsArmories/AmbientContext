@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-05
+
+### Added
+
+* Added source-generated `AddAmbientContext()` helpers for `IServiceCollection` and `IHostBuilder` that register every ambient context declared in the consuming assembly.
+* Added integration coverage for aggregate dependency injection and generic host registration.
+
+### Changed
+
+* Generated registration implementation helpers are now file-local types to avoid collisions in consuming projects.
+* Updated the sample and primary documentation to use aggregate registration by default.
+
 ## [1.0.0] - 2026-05-31
 
 ### Added
@@ -32,7 +44,8 @@ All notable changes to this project are documented in this file.
 
 * Initial preview packages.
 
-[Unreleased]: https://github.com/MarsArmories/AmbientContext/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/MarsArmories/AmbientContext/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/MarsArmories/AmbientContext/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/MarsArmories/AmbientContext/compare/v0.1.0-alpha.3...v1.0.0
 [0.1.0-alpha.3]: https://github.com/MarsArmories/AmbientContext/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
 [0.1.0-alpha.2]: https://github.com/MarsArmories/AmbientContext/compare/v0.1.0-alpha.1...v0.1.0-alpha.2

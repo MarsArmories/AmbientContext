@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace AmbientContext.Core;
 
@@ -24,14 +25,7 @@ public static class AmbientContextServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(contextName);
 
-        services.AddSingleton(new AmbientContextOptions<TContext, TValue>
-        {
-            ContextName = contextName
-        });
-
-        services.AddSingleton<AmbientContextState<TContext, TValue>>();
-        services.AddSingleton<AmbientContextAccessor<TContext, TValue>>();
-        services.AddSingleton<AmbientContextRunner<TContext, TValue>>();
+        services.TryAddSingleton(_ => new AmbientContextRuntime<TContext, TValue>(contextName));
 
         return services;
     }

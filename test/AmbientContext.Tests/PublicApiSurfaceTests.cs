@@ -24,6 +24,11 @@ public sealed class PublicApiSurfaceTests
     private static void AssertApproved(Assembly assembly)
     {
         var approvedFileName = Path.GetFileName($"{assembly.GetName().Name}.txt");
+        if (Path.IsPathRooted(approvedFileName))
+        {
+            throw new InvalidOperationException("Approved API file name must be a relative file name.");
+        }
+
         var approvedPath = Path.Combine(
             AppContext.BaseDirectory,
             "ApprovedApi",

@@ -5,3 +5,9 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|------
+
+### Removed Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|------
+MAAC0001 | AmbientContext | Warning | Removed because no implementation reported this diagnostic.

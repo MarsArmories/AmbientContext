@@ -7,7 +7,7 @@ internal static class AmbientContextDiagnosticDescriptors
     public static readonly DiagnosticDescriptor InvalidName = new(
         "MAACGEN001",
         "Invalid ambient context name",
-        "Ambient context name '{0}' must be a valid C# identifier",
+        "Ambient context name '{0}' must be a valid non-escaped C# identifier",
         "AmbientContext",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -79,7 +79,7 @@ internal static class AmbientContextDiagnosticDescriptors
     public static readonly DiagnosticDescriptor InvalidRegistrationName = new(
         "MAACGEN010",
         "Invalid aggregate registration method name",
-        "Aggregate registration method name '{0}' must be a valid C# identifier",
+        "Aggregate registration method name '{0}' must be a valid non-escaped C# identifier",
         "AmbientContext",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using AmbientContext.Abstractions;
 using AmbientContext.Core;
@@ -122,7 +123,6 @@ public sealed class AmbientContextGeneratorTests
     [TestMethod]
     [DataRow("123ClientId", "MAACGEN001")]
     [DataRow("Client-Id", "MAACGEN001")]
-    [DataRow("@ClientId", "MAACGEN001")]
     public void Rejects_invalid_context_name(string name, string diagnosticId)
     {
         var result = RunGenerator($$"""
@@ -133,6 +133,24 @@ public sealed class AmbientContextGeneratorTests
             """);
 
         result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain(diagnosticId);
+    }
+
+    [TestMethod]
+    public void Rejects_escaped_context_name_with_clear_diagnostic()
+    {
+        var result = RunGenerator("""
+            using System;
+            using AmbientContext.Abstractions;
+
+            [assembly: AmbientContext(typeof(Guid), "@ClientId")]
+            """);
+
+        var diagnostic = result.Diagnostics.Should()
+            .ContainSingle(item => item.Id == "MAACGEN001")
+            .Which;
+
+        diagnostic.GetMessage(CultureInfo.InvariantCulture)
+            .Should().Contain("non-escaped C# identifier");
     }
 
     [TestMethod]
@@ -260,7 +278,7 @@ public sealed class AmbientContextGeneratorTests
     }
 
     [TestMethod]
-    public void Rejects_escaped_registration_method_name()
+    public void Rejects_escaped_registration_method_name_with_clear_diagnostic()
     {
         var result = RunGenerator("""
             using AmbientContext.Abstractions;
@@ -269,7 +287,12 @@ public sealed class AmbientContextGeneratorTests
             [assembly: AmbientContext(typeof(string), "TenantId")]
             """);
 
-        result.Diagnostics.Select(diagnostic => diagnostic.Id).Should().Contain("MAACGEN010");
+        var diagnostic = result.Diagnostics.Should()
+            .ContainSingle(item => item.Id == "MAACGEN010")
+            .Which;
+
+        diagnostic.GetMessage(CultureInfo.InvariantCulture)
+            .Should().Contain("non-escaped C# identifier");
     }
 
     [TestMethod]

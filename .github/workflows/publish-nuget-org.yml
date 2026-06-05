@@ -1,7 +1,10 @@
 name: Publish to NuGet.org
-run-name: Publish NuGet.org packages from ${{ inputs.tag }} by @${{ github.actor }}
+run-name: Publish NuGet.org packages from ${{ github.event.inputs.tag || github.ref_name }} by @${{ github.actor }}
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       tag:
@@ -17,7 +20,7 @@ env:
   DOTNET_NOLOGO: true
 
 concurrency:
-  group: nuget-org-${{ inputs.tag }}
+  group: nuget-org-${{ github.event.inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -30,7 +33,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -39,9 +42,19 @@ jobs:
 
       - name: Resolve package version from tag
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+          REQUESTED_RELEASE_TAG: ${{ github.event.inputs.tag }}
         run: |
           set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            RELEASE_TAG="$REQUESTED_RELEASE_TAG"
+          elif [ "$RELEASE_REF_TYPE" != "tag" ]; then
+            echo "::error::Package publication requires a tag."
+            exit 1
+          fi
+
           if ! git rev-parse --verify --quiet "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null; then
             echo "::error::Tag '$RELEASE_TAG' does not exist."
             exit 1
@@ -99,7 +112,7 @@ jobs:
         run: |
           set -euo pipefail
           for package in artifacts/package/release/*.nupkg; do
-            dotnet nuget push "$package" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"
+            dotnet nuget push "$package" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
           done
 
       - name: Upload package artifacts

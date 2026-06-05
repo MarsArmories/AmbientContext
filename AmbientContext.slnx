@@ -11,7 +11,12 @@
     <Project Path="test/AmbientContext.Analyzer.Tests/AmbientContext.Analyzer.Tests.csproj" />
   </Folder>
   <Folder Name="/samples/">
+    <Project Path="samples/AmbientContext.AspNetCore.Sample/AmbientContext.AspNetCore.Sample.csproj" />
+    <Project Path="samples/AmbientContext.Messaging.Sample/AmbientContext.Messaging.Sample.csproj" />
     <Project Path="samples/AmbientContext.Sample/AmbientContext.Sample.csproj" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/integration-patterns.md" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />

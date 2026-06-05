@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Text;
 
 namespace AmbientContext.Generator.Tests;
 
@@ -24,6 +25,7 @@ public sealed class AmbientContextGeneratorTests
         result.GeneratedSource.Should().Contain("public sealed class TenantIdContext");
         result.GeneratedSource.Should().Contain("public interface ITenantIdAccessor");
         result.GeneratedSource.Should().Contain("public static IServiceCollection AddTenantIdContext");
+        result.GeneratedSource.Should().Contain("file static class TenantIdAmbientContextRegistration");
     }
 
     [TestMethod]
@@ -132,6 +134,29 @@ public sealed class AmbientContextGeneratorTests
         result.GeneratedSource.Should().Contain("namespace AmbientContext.Generated;");
     }
 
+    [TestMethod]
+    public void Generates_aggregate_registration_for_service_collection_and_host_builder()
+    {
+        var result = RunGenerator("""
+            using System;
+            using AmbientContext.Abstractions;
+
+            [assembly: AmbientContext(typeof(Guid), "ClientId", Namespace = "MyApp.Contexts")]
+            [assembly: AmbientContext(typeof(string), "TenantId", Namespace = "MyApp.Contexts")]
+            """);
+
+        result.Diagnostics.Should().BeEmpty();
+        result.GeneratedSource.Should().Contain(
+            "public static IServiceCollection AddAmbientContext(this IServiceCollection services)");
+        result.GeneratedSource.Should().Contain(
+            "public static IHostBuilder AddAmbientContext(this IHostBuilder hostBuilder)");
+        result.GeneratedSource.Should().Contain(
+            "global::MyApp.Contexts.ClientIdAmbientContextServiceCollectionExtensions.AddClientIdContext(services);");
+        result.GeneratedSource.Should().Contain(
+            "global::MyApp.Contexts.TenantIdAmbientContextServiceCollectionExtensions.AddTenantIdContext(services);");
+        result.GeneratedSource.Should().Contain("file static class AmbientContextRegistration");
+    }
+
     private static GeneratorResult RunGenerator(string source)
     {
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
@@ -156,7 +181,9 @@ public sealed class AmbientContextGeneratorTests
         var generatedSource = outputCompilation.SyntaxTrees
             .Skip(1)
             .Select(tree => tree.ToString())
-            .SingleOrDefault() ?? string.Empty;
+            .Aggregate(new StringBuilder(), static (builder, sourceText) =>
+                builder.AppendLine(sourceText))
+            .ToString();
 
         return new GeneratorResult(generatedSource, allDiagnostics);
     }
@@ -171,7 +198,8 @@ public sealed class AmbientContextGeneratorTests
         {
             MetadataReference.CreateFromFile(typeof(AmbientContextAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(AmbientContextAccessor<,>).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly.Location)
+            MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.Hosting.IHostBuilder).Assembly.Location)
         });
     }
 

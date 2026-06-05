@@ -18,7 +18,6 @@ public sealed class AmbientContextAnalyzer : DiagnosticAnalyzer
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(
-            AmbientContextAnalyzerDiagnosticDescriptors.FireAndForget,
             AmbientContextAnalyzerDiagnosticDescriptors.TaskRun,
             AmbientContextAnalyzerDiagnosticDescriptors.ThreadPoolQueue,
             AmbientContextAnalyzerDiagnosticDescriptors.TaskFactoryStartNew);
@@ -35,7 +34,10 @@ public sealed class AmbientContextAnalyzer : DiagnosticAnalyzer
     {
         var invocation = (InvocationExpressionSyntax)context.Node;
 
-        if (!IsExecuteAsInvocation(invocation))
+        if (!IsAmbientContextExecutionInvocation(
+            invocation,
+            context.SemanticModel,
+            context.CancellationToken))
         {
             return;
         }
@@ -59,11 +61,43 @@ public sealed class AmbientContextAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    private static bool IsExecuteAsInvocation(InvocationExpressionSyntax invocation)
+    private static bool IsAmbientContextExecutionInvocation(
+        InvocationExpressionSyntax invocation,
+        SemanticModel semanticModel,
+        CancellationToken cancellationToken)
     {
-        return GetInvokedMemberName(invocation) is { } name &&
-            name.StartsWith("ExecuteAs", StringComparison.Ordinal) &&
-            name.EndsWith("Async", StringComparison.Ordinal);
+        var method = semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol as IMethodSymbol;
+
+        return method is not null &&
+            method.Name.StartsWith("ExecuteAs", StringComparison.Ordinal) &&
+            method.Name.EndsWith("Async", StringComparison.Ordinal) &&
+            HasAmbientContextGeneratedCodeAttribute(method.ContainingType);
+    }
+
+    private static bool HasAmbientContextGeneratedCodeAttribute(INamedTypeSymbol? type)
+    {
+        if (type is null)
+        {
+            return false;
+        }
+
+        foreach (var attribute in type.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() !=
+                "System.CodeDom.Compiler.GeneratedCodeAttribute")
+            {
+                continue;
+            }
+
+            if (attribute.ConstructorArguments.Length > 0 &&
+                attribute.ConstructorArguments[0].Value is string toolName &&
+                string.Equals(toolName, "AmbientContext.Generators", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static DiagnosticDescriptor? GetDescriptor(
@@ -138,13 +172,4 @@ public sealed class AmbientContextAnalyzer : DiagnosticAnalyzer
             memberAccess.Expression.ToString().EndsWith("AmbientContextFlow", StringComparison.Ordinal);
     }
 
-    private static string? GetInvokedMemberName(InvocationExpressionSyntax invocation)
-    {
-        return invocation.Expression switch
-        {
-            MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.ValueText,
-            IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
-            _ => null
-        };
-    }
 }

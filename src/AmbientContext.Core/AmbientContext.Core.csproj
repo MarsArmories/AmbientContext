@@ -7,6 +7,8 @@
     <Description>Strongly typed ambient context wrappers over AsyncLocal&lt;T&gt; with source-generated named APIs.</Description>
     <PackageTags>ambient-context;asynclocal;source-generator;dependency-injection;hosting;dotnet</PackageTags>
     <IsPackable>true</IsPackable>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <PackageValidationBaselineVersion Condition="'$(VersionPrefix)' != '2.0.0'">2.0.0</PackageValidationBaselineVersion>
     <ArtifactsConfiguration>$([System.String]::Copy('$(Configuration)').ToLowerInvariant())</ArtifactsConfiguration>
   </PropertyGroup>
   <ItemGroup>

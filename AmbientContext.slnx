@@ -33,6 +33,8 @@
     <File Path="src/AmbientContext.Analyzers/AnalyzerReleases.Unshipped.md" />
   </Folder>
   <Folder Name="/Diagnostics/Generators/">
+    <File Path="src/AmbientContext.Generators/AnalyzerReleases.Shipped.md" />
+    <File Path="src/AmbientContext.Generators/AnalyzerReleases.Unshipped.md" />
     <File Path="src/AmbientContext.Generators/GeneratorDiagnostics.md" />
   </Folder>
   <Folder Name="/Build/GitHub/">

@@ -63,7 +63,8 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           echo "::group::Pack pull request prerelease artifacts"
-          dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/prerelease --version-suffix "${{ steps.prerelease.outputs.suffix }}"
+          dotnet pack src/AmbientContext.Core/AmbientContext.Core.csproj --configuration Release --no-build --output artifacts/package/prerelease --version-suffix "${{ steps.prerelease.outputs.suffix }}"
+          dotnet pack src/AmbientContext.Analyzers/AmbientContext.Analyzers.csproj --configuration Release --no-build --output artifacts/package/prerelease --version-suffix "${{ steps.prerelease.outputs.suffix }}"
           echo "::endgroup::"
 
       - name: Upload pull request prerelease artifacts

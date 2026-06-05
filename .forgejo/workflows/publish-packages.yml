@@ -76,7 +76,8 @@ jobs:
       - name: Pack
         run: |
           echo "==> Packing AmbientContext"
-          dotnet pack AmbientContext.slnx --configuration Release --no-build --output artifacts/package/release -p:Version="$PACKAGE_VERSION"
+          dotnet pack src/AmbientContext.Core/AmbientContext.Core.csproj --configuration Release --no-build --output artifacts/package/release -p:Version="$PACKAGE_VERSION"
+          dotnet pack src/AmbientContext.Analyzers/AmbientContext.Analyzers.csproj --configuration Release --no-build --output artifacts/package/release -p:Version="$PACKAGE_VERSION"
 
       - name: Validate package artifacts
         run: |

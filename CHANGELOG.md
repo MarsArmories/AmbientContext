@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+* Updated Forgejo package publishing to use a dedicated package-scoped personal access token and support retrying an existing release tag manually.
+
 ## [1.1.0] - 2026-06-05
 
 ### Added

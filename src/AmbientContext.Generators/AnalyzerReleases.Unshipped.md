@@ -1,12 +1,7 @@
-; Unshipped analyzer release
+; Unshipped generator diagnostic release
 ; https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
 ### New Rules
-
-Rule ID | Category | Severity | Notes
---------|----------|----------|------
-
-### Removed Rules
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|------

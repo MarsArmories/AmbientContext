@@ -159,6 +159,41 @@ public sealed class AmbientContextAnalyzerTests
         diagnostics.Should().BeEmpty();
     }
 
+    [TestMethod]
+    public async Task Does_not_warn_for_a_user_defined_lookalike_method()
+    {
+        var diagnostics = await RunAnalyzerAsync("""
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+
+            public sealed class UserContext
+            {
+                public Task ExecuteAsUserAsync(
+                    Guid value,
+                    Func<CancellationToken, Task> action,
+                    CancellationToken cancellationToken = default)
+                {
+                    return action(cancellationToken);
+                }
+            }
+
+            public sealed class Worker
+            {
+                public Task Run(UserContext context)
+                {
+                    return context.ExecuteAsUserAsync(Guid.NewGuid(), cancellationToken =>
+                    {
+                        _ = Task.Run(() => Task.CompletedTask);
+                        return Task.CompletedTask;
+                    });
+                }
+            }
+            """);
+
+        diagnostics.Should().BeEmpty();
+    }
+
     private static async Task<IReadOnlyCollection<Diagnostic>> RunAnalyzerAsync(string source)
     {
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
@@ -200,6 +235,7 @@ public sealed class AmbientContextAnalyzerTests
         using System.Threading;
         using System.Threading.Tasks;
 
+        [System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "test")]
         public sealed class ClientIdContext
         {
             public Task ExecuteAsClientIdAsync(

@@ -13,12 +13,14 @@ using Microsoft.CodeAnalysis.Text;
 namespace AmbientContext.Generators;
 
 /// <summary>
-/// Generates named ambient context APIs from assembly-level <c>AmbientContextAttribute</c> declarations.
+/// Generates named ambient context APIs from assembly-level declarations.
 /// </summary>
 [Generator(LanguageNames.CSharp)]
 public sealed class AmbientContextGenerator : IIncrementalGenerator
 {
     private const string AttributeMetadataName = "AmbientContext.Abstractions.AmbientContextAttribute";
+    private const string RegistrationAttributeMetadataName =
+        "AmbientContext.Abstractions.AmbientContextRegistrationAttribute";
     private static readonly string GeneratorVersion =
         typeof(AmbientContextGenerator).Assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
@@ -27,14 +29,14 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var generationItems = context.CompilationProvider
+        var generationOutput = context.CompilationProvider
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Select(static (source, cancellationToken) =>
                 Collect(source.Left, source.Right, cancellationToken));
 
-        context.RegisterSourceOutput(generationItems, static (sourceProductionContext, items) =>
+        context.RegisterSourceOutput(generationOutput, static (sourceProductionContext, output) =>
         {
-            foreach (var item in items)
+            foreach (var item in output.Items)
             {
                 if (item.Diagnostic is not null)
                 {
@@ -44,26 +46,28 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
 
                 sourceProductionContext.AddSource(
                     $"AmbientContext_{item.Context!.Name}.g.cs",
-                    SourceText.From(Generate(item.Context), Encoding.UTF8));
+                    SourceText.From(GenerateContext(item.Context), Encoding.UTF8));
             }
 
-            var contexts = items
+            var contexts = output.Items
                 .Where(static item => item.Context is not null)
                 .Select(static item => item.Context!)
                 .OrderBy(static model => model.Namespace, StringComparer.Ordinal)
                 .ThenBy(static model => model.Name, StringComparer.Ordinal)
                 .ToImmutableArray();
 
-            if (!contexts.IsDefaultOrEmpty)
+            if (!contexts.IsDefaultOrEmpty && output.Registration is not null)
             {
                 sourceProductionContext.AddSource(
                     "AmbientContext_Registration.g.cs",
-                    SourceText.From(GenerateRegistrationExtensions(contexts), Encoding.UTF8));
+                    SourceText.From(
+                        GenerateRegistrationExtensions(contexts, output.Registration),
+                        Encoding.UTF8));
             }
         });
     }
 
-    private static ImmutableArray<GenerationItem> Collect(
+    private static GenerationOutput Collect(
         Compilation compilation,
         AnalyzerConfigOptionsProvider optionsProvider,
         CancellationToken cancellationToken)
@@ -72,9 +76,11 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
 
         if (attributeSymbol is null)
         {
-            return ImmutableArray<GenerationItem>.Empty;
+            return GenerationOutput.Empty;
         }
 
+        var registrationAttributeSymbol =
+            compilation.GetTypeByMetadataName(RegistrationAttributeMetadataName);
         var rootNamespace = GetRootNamespace(optionsProvider);
         var declarations = new List<AmbientContextDeclaration>();
 
@@ -87,66 +93,7 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var location = GetLocation(attribute, cancellationToken);
-            var valueType = attribute.ConstructorArguments.Length > 0
-                ? attribute.ConstructorArguments[0].Value as ITypeSymbol
-                : null;
-            var name = attribute.ConstructorArguments.Length > 1
-                ? attribute.ConstructorArguments[1].Value as string
-                : null;
-            var declaredNamespace = GetNamedArgument(attribute, "Namespace") as string;
-            var targetNamespace = string.IsNullOrWhiteSpace(declaredNamespace)
-                ? rootNamespace
-                : declaredNamespace!;
-
-            if (string.IsNullOrWhiteSpace(name) || !SyntaxFacts.IsValidIdentifier(name))
-            {
-                declarations.Add(AmbientContextDeclaration.Invalid(
-                    Diagnostic.Create(
-                        AmbientContextDiagnosticDescriptors.InvalidName,
-                        location,
-                        name ?? string.Empty)));
-                continue;
-            }
-
-            if (valueType is null || valueType.TypeKind == TypeKind.Error)
-            {
-                declarations.Add(AmbientContextDeclaration.Invalid(
-                    Diagnostic.Create(
-                        AmbientContextDiagnosticDescriptors.UnresolvedValueType,
-                        location,
-                        name)));
-                continue;
-            }
-
-            if (IsNullableValueType(valueType))
-            {
-                declarations.Add(AmbientContextDeclaration.Invalid(
-                    Diagnostic.Create(
-                        AmbientContextDiagnosticDescriptors.NullableValueType,
-                        location,
-                        name,
-                        valueType.ToDisplayString())));
-                continue;
-            }
-
-            if (IsUnsupported(valueType))
-            {
-                declarations.Add(AmbientContextDeclaration.Invalid(
-                    Diagnostic.Create(
-                        AmbientContextDiagnosticDescriptors.UnsupportedValueType,
-                        location,
-                        name,
-                        valueType.ToDisplayString())));
-                continue;
-            }
-
-            declarations.Add(AmbientContextDeclaration.Valid(
-                name,
-                targetNamespace,
-                valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                valueType.IsValueType,
-                location));
+            declarations.Add(CreateDeclaration(attribute, rootNamespace, cancellationToken));
         }
 
         var items = ImmutableArray.CreateBuilder<GenerationItem>();
@@ -156,50 +103,230 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             items.Add(GenerationItem.FromDiagnostic(declaration.Diagnostic!));
         }
 
-        foreach (var duplicateGroup in declarations
+        var validDeclarations = declarations
             .Where(static declaration => declaration.Context is not null)
-            .GroupBy(static declaration => declaration.Context!.Name)
-            .Where(static group => group.Count() > 1))
-        {
-            foreach (var duplicate in duplicateGroup)
-            {
-                items.Add(GenerationItem.FromDiagnostic(Diagnostic.Create(
-                    AmbientContextDiagnosticDescriptors.DuplicateName,
-                    duplicate.Location,
-                    duplicate.Context!.Name)));
-            }
-        }
-
+            .ToArray();
         var duplicateNames = new HashSet<string>(
-            declarations
-                .Where(static declaration => declaration.Context is not null)
+            validDeclarations
                 .GroupBy(static declaration => declaration.Context!.Name)
                 .Where(static group => group.Count() > 1)
                 .Select(static group => group.Key),
             StringComparer.Ordinal);
 
-        foreach (var declaration in declarations.Where(static declaration => declaration.Context is not null))
+        foreach (var declaration in validDeclarations)
         {
-            if (!duplicateNames.Contains(declaration.Context!.Name))
+            var model = declaration.Context!;
+
+            if (duplicateNames.Contains(model.Name))
             {
-                items.Add(GenerationItem.FromContext(declaration.Context));
+                items.Add(GenerationItem.FromDiagnostic(Diagnostic.Create(
+                    AmbientContextDiagnosticDescriptors.DuplicateName,
+                    declaration.Location,
+                    model.Name)));
+                continue;
             }
+
+            var collision = GetGeneratedTypeNames(model)
+                .FirstOrDefault(typeName =>
+                    compilation.GetTypeByMetadataName($"{model.Namespace}.{typeName}") is not null);
+
+            if (collision is not null)
+            {
+                items.Add(GenerationItem.FromDiagnostic(Diagnostic.Create(
+                    AmbientContextDiagnosticDescriptors.GeneratedNameCollision,
+                    declaration.Location,
+                    collision)));
+                continue;
+            }
+
+            items.Add(GenerationItem.FromContext(model));
         }
 
-        return items.ToImmutable();
+        var contexts = items
+            .Where(static item => item.Context is not null)
+            .Select(static item => item.Context!)
+            .ToImmutableArray();
+        var registration = CollectRegistration(
+            compilation,
+            registrationAttributeSymbol,
+            contexts,
+            items,
+            cancellationToken);
+
+        return new GenerationOutput(items.ToImmutable(), registration);
     }
 
-    private static string Generate(AmbientContextModel model)
+    private static AmbientContextDeclaration CreateDeclaration(
+        AttributeData attribute,
+        string rootNamespace,
+        CancellationToken cancellationToken)
+    {
+        var location = GetLocation(attribute, cancellationToken);
+        var valueType = attribute.ConstructorArguments.Length > 0
+            ? attribute.ConstructorArguments[0].Value as ITypeSymbol
+            : null;
+        var name = attribute.ConstructorArguments.Length > 1
+            ? attribute.ConstructorArguments[1].Value as string
+            : null;
+        var declaredNamespace = GetNamedArgument(attribute, "Namespace") as string;
+        var targetNamespace = string.IsNullOrWhiteSpace(declaredNamespace)
+            ? rootNamespace
+            : declaredNamespace!;
+
+        if (!IsComposableIdentifier(name))
+        {
+            return AmbientContextDeclaration.Invalid(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.InvalidName,
+                location,
+                name ?? string.Empty));
+        }
+
+        if (!IsValidNamespace(targetNamespace))
+        {
+            return AmbientContextDeclaration.Invalid(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.InvalidNamespace,
+                location,
+                targetNamespace,
+                name));
+        }
+
+        if (valueType is null || valueType.TypeKind == TypeKind.Error)
+        {
+            return AmbientContextDeclaration.Invalid(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.UnresolvedValueType,
+                location,
+                name));
+        }
+
+        if (IsNullableValueType(valueType))
+        {
+            return AmbientContextDeclaration.Invalid(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.NullableValueType,
+                location,
+                name,
+                valueType.ToDisplayString()));
+        }
+
+        if (ContainsTypeParameter(valueType))
+        {
+            return AmbientContextDeclaration.Invalid(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.OpenGenericValueType,
+                location,
+                name,
+                valueType.ToDisplayString()));
+        }
+
+        if (IsUnsupported(valueType))
+        {
+            return AmbientContextDeclaration.Invalid(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.UnsupportedValueType,
+                location,
+                name,
+                valueType.ToDisplayString()));
+        }
+
+        return AmbientContextDeclaration.Valid(
+            name!,
+            targetNamespace,
+            valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            valueType.IsValueType,
+            location);
+    }
+
+    private static AmbientContextRegistrationModel? CollectRegistration(
+        Compilation compilation,
+        INamedTypeSymbol? registrationAttributeSymbol,
+        ImmutableArray<AmbientContextModel> contexts,
+        ImmutableArray<GenerationItem>.Builder items,
+        CancellationToken cancellationToken)
+    {
+        if (registrationAttributeSymbol is null)
+        {
+            return null;
+        }
+
+        var attributes = compilation.Assembly.GetAttributes()
+            .Where(attribute =>
+                SymbolEqualityComparer.Default.Equals(
+                    attribute.AttributeClass,
+                    registrationAttributeSymbol))
+            .ToArray();
+
+        if (attributes.Length == 0)
+        {
+            return null;
+        }
+
+        if (attributes.Length > 1)
+        {
+            foreach (var attribute in attributes)
+            {
+                items.Add(GenerationItem.FromDiagnostic(Diagnostic.Create(
+                    AmbientContextDiagnosticDescriptors.DuplicateRegistration,
+                    GetLocation(attribute, cancellationToken))));
+            }
+
+            return null;
+        }
+
+        var registrationAttribute = attributes[0];
+        var location = GetLocation(registrationAttribute, cancellationToken);
+        var methodName = registrationAttribute.ConstructorArguments.Length > 0
+            ? registrationAttribute.ConstructorArguments[0].Value as string
+            : null;
+
+        if (!IsComposableIdentifier(methodName))
+        {
+            items.Add(GenerationItem.FromDiagnostic(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.InvalidRegistrationName,
+                location,
+                methodName ?? string.Empty)));
+            return null;
+        }
+
+        if (contexts.Any(context =>
+            string.Equals($"Add{context.Name}Context", methodName, StringComparison.Ordinal)))
+        {
+            items.Add(GenerationItem.FromDiagnostic(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.RegistrationNameCollision,
+                location,
+                methodName)));
+            return null;
+        }
+
+        var model = new AmbientContextRegistrationModel(methodName!);
+        var serviceTypeName =
+            $"Microsoft.Extensions.DependencyInjection.{model.ServiceCollectionExtensionsName}";
+        var hostTypeName = $"Microsoft.Extensions.Hosting.{model.HostBuilderExtensionsName}";
+
+        if (compilation.GetTypeByMetadataName(serviceTypeName) is not null ||
+            compilation.GetTypeByMetadataName(hostTypeName) is not null)
+        {
+            items.Add(GenerationItem.FromDiagnostic(Diagnostic.Create(
+                AmbientContextDiagnosticDescriptors.GeneratedNameCollision,
+                location,
+                compilation.GetTypeByMetadataName(serviceTypeName) is not null
+                    ? serviceTypeName
+                    : hostTypeName)));
+            return null;
+        }
+
+        return model;
+    }
+
+    private static string GenerateContext(AmbientContextModel model)
     {
         var markerName = $"{model.Name}AmbientContextMarker";
         var accessorInterfaceName = $"I{model.Name}Accessor";
         var accessorName = $"{model.Name}Accessor";
+        var contextInterfaceName = $"I{model.Name}Context";
         var contextName = $"{model.Name}Context";
         var serviceCollectionExtensionsName = $"{model.Name}AmbientContextServiceCollectionExtensions";
-        var executeMethodName = $"ExecuteAs{model.Name}Async";
+        var executeMethodName = $"ExecuteAs{model.Name}";
+        var executeAsyncMethodName = $"{executeMethodName}Async";
         var tryGetAttribute = model.IsValueType ? string.Empty : "[NotNullWhen(true)] ";
         var tryGetOutType = model.IsValueType ? model.ValueTypeName : $"{model.ValueTypeName}?";
-        var valueCurrentOrDefaultType = model.IsValueType ? $"{model.ValueTypeName}?" : $"{model.ValueTypeName}?";
+        var valueCurrentOrDefaultType = $"{model.ValueTypeName}?";
         var valueType = model.ValueTypeName;
 
         return $$"""
@@ -213,15 +340,13 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             using System.Threading.Tasks;
             using AmbientContext.Core;
             using Microsoft.Extensions.DependencyInjection;
+            using Microsoft.Extensions.DependencyInjection.Extensions;
 
             namespace {{model.Namespace}};
 
-            /// <summary>
-            /// Marker type used to isolate {{model.Name}} ambient context state.
-            /// </summary>
             [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-            public sealed class {{markerName}}
+            internal sealed class {{markerName}}
             {
             }
 
@@ -231,55 +356,31 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             public interface {{accessorInterfaceName}}
             {
-                /// <summary>
-                /// Gets a value indicating whether a current ambient value exists.
-                /// </summary>
                 bool HasCurrent { get; }
 
-                /// <summary>
-                /// Gets the current ambient value.
-                /// </summary>
                 {{valueType}} Current { get; }
 
-                /// <summary>
-                /// Gets the current ambient value, or null when no value is available.
-                /// </summary>
                 {{valueCurrentOrDefaultType}} CurrentOrDefault { get; }
 
-                /// <summary>
-                /// Attempts to get the current ambient value.
-                /// </summary>
-                /// <param name="value">The current ambient value when one is available.</param>
-                /// <returns>true when a value is available; otherwise, false.</returns>
                 bool TryGetCurrent({{tryGetAttribute}}out {{tryGetOutType}} value);
             }
 
-            /// <summary>
-            /// Default implementation of <see cref="{{accessorInterfaceName}}"/>.
-            /// </summary>
             [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
             [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-            public sealed class {{accessorName}} : {{accessorInterfaceName}}
+            internal sealed class {{accessorName}} : {{accessorInterfaceName}}
             {
-                private readonly AmbientContextAccessor<{{markerName}}, {{valueType}}> _inner;
+                private readonly AmbientContextRuntime<{{markerName}}, {{valueType}}> _runtime;
 
-                /// <summary>
-                /// Initializes a new instance of the <see cref="{{accessorName}}"/> class.
-                /// </summary>
-                /// <param name="inner">The inner ambient context accessor.</param>
-                public {{accessorName}}(AmbientContextAccessor<{{markerName}}, {{valueType}}> inner)
+                internal {{accessorName}}(AmbientContextRuntime<{{markerName}}, {{valueType}}> runtime)
                 {
-                    _inner = inner;
+                    _runtime = runtime;
                 }
 
-                /// <inheritdoc />
-                public bool HasCurrent => _inner.HasCurrent;
+                public bool HasCurrent => _runtime.HasCurrent;
 
-                /// <inheritdoc />
-                public {{valueType}} Current => _inner.Current;
+                public {{valueType}} Current => _runtime.Current;
 
-                /// <inheritdoc />
-                public {{valueCurrentOrDefaultType}} CurrentOrDefault => _inner.CurrentOrDefault;
+                public {{valueCurrentOrDefaultType}} CurrentOrDefault => _runtime.CurrentOrDefault;
 
             {{GenerateTryGetCurrent(model, tryGetAttribute, tryGetOutType)}}
             }
@@ -288,80 +389,58 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             /// Runs delegates inside a scoped {{model.Name}} ambient value.
             /// </summary>
             [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
-            [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-            public sealed class {{contextName}}
+            public interface {{contextInterfaceName}}
             {
-                private readonly AmbientContextRunner<{{markerName}}, {{valueType}}> _runner;
+                void {{executeMethodName}}({{valueType}} value, Action action);
 
-                /// <summary>
-                /// Initializes a new instance of the <see cref="{{contextName}}"/> class.
-                /// </summary>
-                /// <param name="runner">The inner ambient context runner.</param>
-                public {{contextName}}(AmbientContextRunner<{{markerName}}, {{valueType}}> runner)
+                TResult {{executeMethodName}}<TResult>({{valueType}} value, Func<TResult> action);
+
+                Task {{executeAsyncMethodName}}(
+                    {{valueType}} value,
+                    Func<CancellationToken, Task> action,
+                    CancellationToken cancellationToken = default);
+
+                Task<TResult> {{executeAsyncMethodName}}<TResult>(
+                    {{valueType}} value,
+                    Func<CancellationToken, Task<TResult>> action,
+                    CancellationToken cancellationToken = default);
+            }
+
+            [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
+            [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+            internal sealed class {{contextName}} : {{contextInterfaceName}}
+            {
+                private readonly AmbientContextRuntime<{{markerName}}, {{valueType}}> _runtime;
+
+                internal {{contextName}}(AmbientContextRuntime<{{markerName}}, {{valueType}}> runtime)
                 {
-                    _runner = runner;
+                    _runtime = runtime;
                 }
 
-                /// <summary>
-                /// Executes an asynchronous delegate inside a {{model.Name}} ambient context scope.
-                /// </summary>
-                /// <param name="value">The non-null ambient value.</param>
-                /// <param name="action">The delegate to execute.</param>
-                /// <param name="cancellationToken">A cancellation token passed to the delegate.</param>
-                /// <returns>A task that represents the asynchronous operation.</returns>
-                public Task {{executeMethodName}}(
+                public void {{executeMethodName}}({{valueType}} value, Action action)
+                {
+                    _runtime.Execute(value, action);
+                }
+
+                public TResult {{executeMethodName}}<TResult>({{valueType}} value, Func<TResult> action)
+                {
+                    return _runtime.Execute(value, action);
+                }
+
+                public Task {{executeAsyncMethodName}}(
                     {{valueType}} value,
                     Func<CancellationToken, Task> action,
                     CancellationToken cancellationToken = default)
                 {
-                    return _runner.ExecuteAsync(value, action, cancellationToken);
+                    return _runtime.ExecuteAsync(value, action, cancellationToken);
                 }
 
-                /// <summary>
-                /// Executes an asynchronous delegate inside a {{model.Name}} ambient context scope and returns its result.
-                /// </summary>
-                /// <typeparam name="TResult">The delegate result type.</typeparam>
-                /// <param name="value">The non-null ambient value.</param>
-                /// <param name="action">The delegate to execute.</param>
-                /// <param name="cancellationToken">A cancellation token passed to the delegate.</param>
-                /// <returns>A task that contains the delegate result.</returns>
-                public Task<TResult> {{executeMethodName}}<TResult>(
+                public Task<TResult> {{executeAsyncMethodName}}<TResult>(
                     {{valueType}} value,
                     Func<CancellationToken, Task<TResult>> action,
                     CancellationToken cancellationToken = default)
                 {
-                    return _runner.ExecuteAsync(value, action, cancellationToken);
-                }
-
-                /// <summary>
-                /// Executes a value-task delegate inside a {{model.Name}} ambient context scope.
-                /// </summary>
-                /// <param name="value">The non-null ambient value.</param>
-                /// <param name="action">The delegate to execute.</param>
-                /// <param name="cancellationToken">A cancellation token passed to the delegate.</param>
-                /// <returns>A value task that represents the asynchronous operation.</returns>
-                public ValueTask {{executeMethodName}}(
-                    {{valueType}} value,
-                    Func<CancellationToken, ValueTask> action,
-                    CancellationToken cancellationToken = default)
-                {
-                    return _runner.ExecuteAsync(value, action, cancellationToken);
-                }
-
-                /// <summary>
-                /// Executes a value-task delegate inside a {{model.Name}} ambient context scope and returns its result.
-                /// </summary>
-                /// <typeparam name="TResult">The delegate result type.</typeparam>
-                /// <param name="value">The non-null ambient value.</param>
-                /// <param name="action">The delegate to execute.</param>
-                /// <param name="cancellationToken">A cancellation token passed to the delegate.</param>
-                /// <returns>A value task that contains the delegate result.</returns>
-                public ValueTask<TResult> {{executeMethodName}}<TResult>(
-                    {{valueType}} value,
-                    Func<CancellationToken, ValueTask<TResult>> action,
-                    CancellationToken cancellationToken = default)
-                {
-                    return _runner.ExecuteAsync(value, action, cancellationToken);
+                    return _runtime.ExecuteAsync(value, action, cancellationToken);
                 }
             }
 
@@ -372,11 +451,6 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
             public static class {{serviceCollectionExtensionsName}}
             {
-                /// <summary>
-                /// Registers the {{model.Name}} ambient context services.
-                /// </summary>
-                /// <param name="services">The service collection.</param>
-                /// <returns>The same service collection.</returns>
                 public static IServiceCollection Add{{model.Name}}Context(this IServiceCollection services)
                 {
                     return {{model.Name}}AmbientContextRegistration.Add(services);
@@ -388,8 +462,10 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
                 public static IServiceCollection Add(IServiceCollection services)
                 {
                     services.AddAmbientContext<{{markerName}}, {{valueType}}>("{{model.Name}}");
-                    services.AddSingleton<{{accessorInterfaceName}}, {{accessorName}}>();
-                    services.AddSingleton<{{contextName}}>();
+                    services.TryAddSingleton<{{accessorInterfaceName}}>(static provider =>
+                        new {{accessorName}}(provider.GetRequiredService<AmbientContextRuntime<{{markerName}}, {{valueType}}>>()));
+                    services.TryAddSingleton<{{contextInterfaceName}}>(static provider =>
+                        new {{contextName}}(provider.GetRequiredService<AmbientContextRuntime<{{markerName}}, {{valueType}}>>()));
 
                     return services;
                 }
@@ -397,7 +473,9 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             """;
     }
 
-    private static string GenerateRegistrationExtensions(ImmutableArray<AmbientContextModel> models)
+    private static string GenerateRegistrationExtensions(
+        ImmutableArray<AmbientContextModel> models,
+        AmbientContextRegistrationModel registration)
     {
         var registrations = new StringBuilder();
 
@@ -422,19 +500,11 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
 
             namespace Microsoft.Extensions.DependencyInjection
             {
-                /// <summary>
-                /// Provides aggregate dependency injection registration for all generated ambient contexts.
-                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
                 [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-                public static class GeneratedAmbientContextServiceCollectionExtensions
+                public static class {{registration.ServiceCollectionExtensionsName}}
                 {
-                    /// <summary>
-                    /// Registers all ambient contexts generated for this assembly.
-                    /// </summary>
-                    /// <param name="services">The service collection.</param>
-                    /// <returns>The same service collection.</returns>
-                    public static IServiceCollection AddAmbientContext(this IServiceCollection services)
+                    public static IServiceCollection {{registration.MethodName}}(this IServiceCollection services)
                     {
                         return AmbientContextRegistration.Add(services);
                     }
@@ -443,22 +513,14 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
 
             namespace Microsoft.Extensions.Hosting
             {
-                /// <summary>
-                /// Provides aggregate host registration for all generated ambient contexts.
-                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("AmbientContext.Generators", "{{GeneratorVersion}}")]
                 [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-                public static class GeneratedAmbientContextHostBuilderExtensions
+                public static class {{registration.HostBuilderExtensionsName}}
                 {
-                    /// <summary>
-                    /// Registers all ambient contexts generated for this assembly.
-                    /// </summary>
-                    /// <param name="hostBuilder">The host builder.</param>
-                    /// <returns>The same host builder.</returns>
-                    public static IHostBuilder AddAmbientContext(this IHostBuilder hostBuilder)
+                    public static IHostBuilder {{registration.MethodName}}(this IHostBuilder hostBuilder)
                     {
                         hostBuilder.ConfigureServices(static (_, services) =>
-                            global::Microsoft.Extensions.DependencyInjection.GeneratedAmbientContextServiceCollectionExtensions.AddAmbientContext(services));
+                            global::Microsoft.Extensions.DependencyInjection.{{registration.ServiceCollectionExtensionsName}}.{{registration.MethodName}}(services));
 
                         return hostBuilder;
                     }
@@ -476,25 +538,26 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             """;
     }
 
-    private static string GenerateTryGetCurrent(AmbientContextModel model, string tryGetAttribute, string tryGetOutType)
+    private static string GenerateTryGetCurrent(
+        AmbientContextModel model,
+        string tryGetAttribute,
+        string tryGetOutType)
     {
         if (!model.IsValueType)
         {
             return $$"""
-                /// <inheritdoc />
                 public bool TryGetCurrent({{tryGetAttribute}}out {{tryGetOutType}} value)
                 {
-                    return _inner.TryGetCurrent(out value);
+                    return _runtime.TryGetCurrent(out value);
                 }
 
             """;
         }
 
         return $$"""
-                /// <inheritdoc />
                 public bool TryGetCurrent(out {{tryGetOutType}} value)
                 {
-                    if (_inner.TryGetCurrent(out var current))
+                    if (_runtime.TryGetCurrent(out var current))
                     {
                         value = current;
                         return true;
@@ -507,9 +570,21 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             """;
     }
 
+    private static IEnumerable<string> GetGeneratedTypeNames(AmbientContextModel model)
+    {
+        yield return $"{model.Name}AmbientContextMarker";
+        yield return $"I{model.Name}Accessor";
+        yield return $"{model.Name}Accessor";
+        yield return $"I{model.Name}Context";
+        yield return $"{model.Name}Context";
+        yield return $"{model.Name}AmbientContextServiceCollectionExtensions";
+    }
+
     private static string GetRootNamespace(AnalyzerConfigOptionsProvider optionsProvider)
     {
-        return optionsProvider.GlobalOptions.TryGetValue("build_property.RootNamespace", out var rootNamespace) &&
+        return optionsProvider.GlobalOptions.TryGetValue(
+                "build_property.RootNamespace",
+                out var rootNamespace) &&
             !string.IsNullOrWhiteSpace(rootNamespace)
             ? rootNamespace!
             : "AmbientContext.Generated";
@@ -528,9 +603,24 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
         return null;
     }
 
-    private static Location? GetLocation(AttributeData attribute, CancellationToken cancellationToken)
+    private static Location? GetLocation(
+        AttributeData attribute,
+        CancellationToken cancellationToken)
     {
         return attribute.ApplicationSyntaxReference?.GetSyntax(cancellationToken).GetLocation();
+    }
+
+    private static bool IsValidNamespace(string value)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+            value.Split('.').All(SyntaxFacts.IsValidIdentifier);
+    }
+
+    private static bool IsComposableIdentifier(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+            value!.IndexOf('@') < 0 &&
+            SyntaxFacts.IsValidIdentifier(value);
     }
 
     private static bool IsNullableValueType(ITypeSymbol symbol)
@@ -539,14 +629,49 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
             namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
     }
 
-    private static bool IsUnsupported(ITypeSymbol symbol)
+    private static bool ContainsTypeParameter(ITypeSymbol symbol)
     {
-        if (symbol.TypeKind == TypeKind.Pointer || symbol.TypeKind == TypeKind.FunctionPointer)
+        if (symbol.TypeKind == TypeKind.TypeParameter)
         {
             return true;
         }
 
-        return symbol is INamedTypeSymbol { IsRefLikeType: true };
+        return symbol is INamedTypeSymbol namedType &&
+            (namedType.IsUnboundGenericType ||
+                namedType.TypeArguments.Any(ContainsTypeParameter));
+    }
+
+    private static bool IsUnsupported(ITypeSymbol symbol)
+    {
+        if (symbol.SpecialType == SpecialType.System_Void ||
+            symbol.TypeKind == TypeKind.Pointer ||
+            symbol.TypeKind == TypeKind.FunctionPointer)
+        {
+            return true;
+        }
+
+        return symbol is INamedTypeSymbol { IsRefLikeType: true } ||
+            symbol is INamedTypeSymbol { IsStatic: true } ||
+            symbol.TypeKind == TypeKind.Module;
+    }
+
+    private sealed class GenerationOutput
+    {
+        public static readonly GenerationOutput Empty = new(
+            ImmutableArray<GenerationItem>.Empty,
+            null);
+
+        public GenerationOutput(
+            ImmutableArray<GenerationItem> items,
+            AmbientContextRegistrationModel? registration)
+        {
+            Items = items;
+            Registration = registration;
+        }
+
+        public ImmutableArray<GenerationItem> Items { get; }
+
+        public AmbientContextRegistrationModel? Registration { get; }
     }
 
     private sealed class GenerationItem
@@ -574,7 +699,10 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
 
     private sealed class AmbientContextDeclaration
     {
-        private AmbientContextDeclaration(AmbientContextModel? context, Diagnostic? diagnostic, Location? location)
+        private AmbientContextDeclaration(
+            AmbientContextModel? context,
+            Diagnostic? diagnostic,
+            Location? location)
         {
             Context = context;
             Diagnostic = diagnostic;
@@ -608,7 +736,11 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
 
     private sealed class AmbientContextModel
     {
-        public AmbientContextModel(string name, string @namespace, string valueTypeName, bool isValueType)
+        public AmbientContextModel(
+            string name,
+            string @namespace,
+            string valueTypeName,
+            bool isValueType)
         {
             Name = name;
             Namespace = @namespace;
@@ -623,5 +755,21 @@ public sealed class AmbientContextGenerator : IIncrementalGenerator
         public string ValueTypeName { get; }
 
         public bool IsValueType { get; }
+    }
+
+    private sealed class AmbientContextRegistrationModel
+    {
+        public AmbientContextRegistrationModel(string methodName)
+        {
+            MethodName = methodName;
+            ServiceCollectionExtensionsName = $"{methodName}ServiceCollectionExtensions";
+            HostBuilderExtensionsName = $"{methodName}HostBuilderExtensions";
+        }
+
+        public string MethodName { get; }
+
+        public string ServiceCollectionExtensionsName { get; }
+
+        public string HostBuilderExtensionsName { get; }
     }
 }

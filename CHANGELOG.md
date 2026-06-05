@@ -4,6 +4,30 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-06-05
+
+### Added
+
+* Added optional `AmbientContextRegistrationAttribute` for collision-resistant, assembly-specific aggregate registration methods.
+* Added generated `I{Name}Context` interfaces and synchronous `ExecuteAs{Name}` overloads.
+* Added generator diagnostics for invalid namespaces, open generic values, duplicate or invalid aggregate registration declarations, and generated name collisions.
+* Added approved public API snapshots and NuGet package validation.
+* Added integration guidance and buildable ASP.NET Core and message-processing samples.
+
+### Changed
+
+* Consolidated the public core runtime into `AmbientContextRuntime<TContext, TValue>`.
+* Generated markers, accessors, context implementations, constructors, and registration helpers are now internal.
+* Generated dependency injection registration is idempotent.
+* Analyzer matching now identifies generated AmbientContext methods semantically.
+
+### Removed
+
+* Removed public `ValueTask` execution overloads in favor of unambiguous Task-based delegates.
+* Removed the collision-prone parameterless `AddAmbientContext()` aggregate methods.
+* Removed the unused `MAAC0001` analyzer rule.
+* Removed the previous public accessor, runner, state, and options infrastructure types.
+
 ### Fixed
 
 * Updated Forgejo package publishing to use a dedicated package-scoped personal access token and support retrying an existing release tag manually.
@@ -50,7 +74,8 @@ All notable changes to this project are documented in this file.
 
 * Initial preview packages.
 
-[Unreleased]: https://github.com/MarsArmories/AmbientContext/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/MarsArmories/AmbientContext/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/MarsArmories/AmbientContext/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/MarsArmories/AmbientContext/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/MarsArmories/AmbientContext/compare/v0.1.0-alpha.3...v1.0.0
 [0.1.0-alpha.3]: https://github.com/MarsArmories/AmbientContext/compare/v0.1.0-alpha.2...v0.1.0-alpha.3

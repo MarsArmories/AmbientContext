@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file.
 
 * Updated Forgejo package publishing to use a dedicated package-scoped personal access token and support retrying an existing release tag manually.
 * Enabled automatic NuGet.org trusted publishing for release tag pushes while retaining safe manual retries for existing tags.
+* Publishing workflows now create idempotent GitHub and Forgejo releases from the matching changelog section after packages are published.
 
 ## [1.1.0] - 2026-06-05
 

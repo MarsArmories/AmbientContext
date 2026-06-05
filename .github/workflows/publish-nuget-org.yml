@@ -13,7 +13,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 env:
@@ -66,6 +66,7 @@ jobs:
             exit 1
           fi
 
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
           echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
           echo "Publishing package version: $package_version"
 
@@ -115,6 +116,51 @@ jobs:
             dotnet nuget push "$package" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
           done
 
+      - name: Prepare release notes
+        run: |
+          set -euo pipefail
+          awk -v version="$PACKAGE_VERSION" '
+            $0 == "## [" version "]" || index($0, "## [" version "] - ") == 1 {
+              found = 1
+              next
+            }
+            found && /^## \[/ {
+              exit
+            }
+            found {
+              print
+            }
+            END {
+              if (!found) {
+                exit 1
+              }
+            }
+          ' CHANGELOG.md > artifacts/release-notes.md
+          sed -i '/./,$!d' artifacts/release-notes.md
+          test -s artifacts/release-notes.md
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "GitHub release '$RELEASE_TAG' already exists."
+            exit 0
+          fi
+
+          release_args=()
+          if [[ "$PACKAGE_VERSION" == *-* ]]; then
+            release_args+=(--prerelease)
+          fi
+
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --notes-file artifacts/release-notes.md \
+            "${release_args[@]}"
+
       - name: Upload package artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -141,4 +187,5 @@ jobs:
             echo "| Tests | complete |"
             echo "| Coverage | Cobertura files uploaded as artifact \`coverage\` |"
             echo "| Packages | pushed to NuGet.org |"
+            echo "| Release | created or already present for \`$RELEASE_TAG\` |"
           } >> "$GITHUB_STEP_SUMMARY"

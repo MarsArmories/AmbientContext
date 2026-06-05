@@ -23,10 +23,11 @@ public sealed class PublicApiSurfaceTests
 
     private static void AssertApproved(Assembly assembly)
     {
+        var approvedFileName = Path.GetFileName($"{assembly.GetName().Name}.txt");
         var approvedPath = Path.Combine(
             AppContext.BaseDirectory,
             "ApprovedApi",
-            $"{assembly.GetName().Name}.txt");
+            approvedFileName);
         var approved = File.ReadAllLines(approvedPath)
             .Where(static line => !string.IsNullOrWhiteSpace(line))
             .Order(StringComparer.Ordinal)

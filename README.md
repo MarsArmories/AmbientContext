@@ -3,7 +3,7 @@
 [![CI](https://github.com/MarsArmories/AmbientContext/actions/workflows/ci.yml/badge.svg)](https://github.com/MarsArmories/AmbientContext/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/MarsArmories.AmbientContext.svg)](https://www.nuget.org/packages/MarsArmories.AmbientContext)
 
-AmbientContext is a .NET 8 and .NET 10 library for strongly typed ambient values over `AsyncLocal<T>`. The runtime owns the scoped state, while the source generator creates named APIs such as `ClientIdContext`, `TenantIdContext`, and typed accessors.
+AmbientContext is a .NET 8 and .NET 10 library for strongly typed ambient values over `AsyncLocal<T>`. The runtime owns the scoped state, while the source generator creates named APIs such as `ClientIdContext`, `TenantIdContext`, typed accessors, and aggregate registration helpers.
 
 ## Installation
 
@@ -35,8 +35,16 @@ using AmbientContext.Abstractions;
 Register the generated services:
 
 ```csharp
-services.AddClientIdContext();
-services.AddTenantIdContext();
+services.AddAmbientContext();
+```
+
+`AddAmbientContext()` registers every ambient context generated for the assembly. The individual generated methods, such as `AddClientIdContext()` and `AddTenantIdContext()`, remain available when selective registration is needed.
+
+Generic host applications can register all generated contexts directly on `IHostBuilder`:
+
+```csharp
+Host.CreateDefaultBuilder(args)
+    .AddAmbientContext();
 ```
 
 Inject the generated context runner and accessor:

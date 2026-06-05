@@ -12,8 +12,7 @@ public static class Program
     {
         var services = new ServiceCollection();
 
-        services.AddClientIdContext();
-        services.AddTenantIdContext();
+        services.AddAmbientContext();
         services.AddSingleton<Processor>();
 
         var provider = services.BuildServiceProvider();

@@ -75,11 +75,10 @@ jobs:
       - name: Publish packages
         env:
           NUGET_API_KEY: ${{ secrets.FORGEJO_TOKEN }}
-          FORGEJO_SERVER_URL: ${{ github.server_url }}
           FORGEJO_REPOSITORY_OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          source_url="${FORGEJO_SERVER_URL}/api/packages/${FORGEJO_REPOSITORY_OWNER}/nuget/index.json"
+          source_url="https://code.vox9.net/api/packages/${FORGEJO_REPOSITORY_OWNER}/nuget/index.json"
 
           for package in artifacts/package/release/*.nupkg; do
             dotnet nuget push "$package" --source "$source_url" --api-key "$NUGET_API_KEY" --no-symbols

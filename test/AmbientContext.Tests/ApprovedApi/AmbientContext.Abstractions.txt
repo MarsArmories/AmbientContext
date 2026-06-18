@@ -1,0 +1,23 @@
+T:abstract class AmbientContext.Abstractions.AmbientContextException
+C:AmbientContext.Abstractions.AmbientContextException(System.String)
+C:AmbientContext.Abstractions.AmbientContextException(System.String,System.Exception)
+T:sealed class AmbientContext.Abstractions.AmbientContextAttribute
+C:AmbientContext.Abstractions.AmbientContextAttribute(System.Type,System.String)
+P:AmbientContext.Abstractions.AmbientContextAttribute.Name:System.String
+P:AmbientContext.Abstractions.AmbientContextAttribute.Namespace:System.String
+P:AmbientContext.Abstractions.AmbientContextAttribute.ValueType:System.Type
+T:sealed class AmbientContext.Abstractions.AmbientContextMissingException
+C:AmbientContext.Abstractions.AmbientContextMissingException(System.String,System.Type)
+P:AmbientContext.Abstractions.AmbientContextMissingException.ContextName:System.String
+P:AmbientContext.Abstractions.AmbientContextMissingException.ValueType:System.Type
+T:sealed class AmbientContext.Abstractions.AmbientContextNullValueException
+C:AmbientContext.Abstractions.AmbientContextNullValueException(System.String,System.Type)
+P:AmbientContext.Abstractions.AmbientContextNullValueException.ContextName:System.String
+P:AmbientContext.Abstractions.AmbientContextNullValueException.ValueType:System.Type
+T:sealed class AmbientContext.Abstractions.AmbientContextRegistrationAttribute
+C:AmbientContext.Abstractions.AmbientContextRegistrationAttribute(System.String)
+P:AmbientContext.Abstractions.AmbientContextRegistrationAttribute.MethodName:System.String
+T:sealed class AmbientContext.Abstractions.AmbientContextStackCorruptionException
+C:AmbientContext.Abstractions.AmbientContextStackCorruptionException(System.String,System.Type)
+P:AmbientContext.Abstractions.AmbientContextStackCorruptionException.ContextName:System.String
+P:AmbientContext.Abstractions.AmbientContextStackCorruptionException.ValueType:System.Type

@@ -4,14 +4,6 @@ namespace AmbientContext.Analyzers;
 
 internal static class AmbientContextAnalyzerDiagnosticDescriptors
 {
-    public static readonly DiagnosticDescriptor FireAndForget = new(
-        "MAAC0001",
-        "Fire-and-forget work created inside ambient context scope",
-        "Fire-and-forget work created inside an ambient context scope may capture AsyncLocal context",
-        "AmbientContext",
-        DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
     public static readonly DiagnosticDescriptor TaskRun = new(
         "MAAC0002",
         "Task.Run used inside ambient context scope",

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AmbientContext.Abstractions\AmbientContext.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\AmbientContext.Core\AmbientContext.Core.csproj" />
+    <ProjectReference Include="..\..\src\AmbientContext.Generators\AmbientContext.Generators.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
+  </ItemGroup>
+</Project>

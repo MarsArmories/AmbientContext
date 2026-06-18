@@ -1,0 +1,15 @@
+T:static class AmbientContext.Core.AmbientContextFlow
+M:AmbientContext.Core.AmbientContextFlow.SuppressFor(System.Action):System.Void
+M:AmbientContext.Core.AmbientContextFlow.SuppressFor<TResult>(System.Func<TResult>):TResult
+T:sealed class AmbientContext.Core.AmbientContextRuntime<TContext,TValue>
+C:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>(System.String)
+M:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.Execute(TValue,System.Action):System.Void
+M:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.Execute<TResult>(TValue,System.Func<TResult>):TResult
+M:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.ExecuteAsync(TValue,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task>,System.Threading.CancellationToken):System.Threading.Tasks.Task
+M:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.ExecuteAsync<TResult>(TValue,System.Func<System.Threading.CancellationToken,System.Threading.Tasks.Task<TResult>>,System.Threading.CancellationToken):System.Threading.Tasks.Task<TResult>
+M:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.TryGetCurrent(TValue&):System.Boolean
+P:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.Current:TValue
+P:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.CurrentOrDefault:TValue
+P:AmbientContext.Core.AmbientContextRuntime<TContext,TValue>.HasCurrent:System.Boolean
+T:static class AmbientContext.Core.AmbientContextServiceCollectionExtensions
+M:AmbientContext.Core.AmbientContextServiceCollectionExtensions.AddAmbientContext<TContext,TValue>(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String):Microsoft.Extensions.DependencyInjection.IServiceCollection

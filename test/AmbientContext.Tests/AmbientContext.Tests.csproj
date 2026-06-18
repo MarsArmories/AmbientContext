@@ -6,4 +6,7 @@
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="NSubstitute" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="ApprovedApi\*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -3,7 +3,7 @@
 [![CI](https://github.com/MarsArmories/AmbientContext/actions/workflows/ci.yml/badge.svg)](https://github.com/MarsArmories/AmbientContext/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/MarsArmories.AmbientContext.svg)](https://www.nuget.org/packages/MarsArmories.AmbientContext)
 
-AmbientContext is a .NET 8 and .NET 10 library for strongly typed ambient values over `AsyncLocal<T>`. The runtime owns the scoped state, while the source generator creates named APIs such as `ClientIdContext`, `TenantIdContext`, typed accessors, and aggregate registration helpers.
+AmbientContext is a .NET 8 and .NET 10 library for strongly typed ambient values over `AsyncLocal<T>`. The runtime owns the scoped state, while the source generator creates named APIs such as `IClientIdContext`, `ITenantIdAccessor`, and optional aggregate registration helpers.
 
 ## Installation
 
@@ -30,32 +30,33 @@ using AmbientContext.Abstractions;
 
 [assembly: AmbientContext(typeof(Guid), "ClientId")]
 [assembly: AmbientContext(typeof(string), "TenantId")]
+[assembly: AmbientContextRegistration("AddMyAppAmbientContexts")]
 ```
 
 Register the generated services:
 
 ```csharp
-services.AddAmbientContext();
+services.AddMyAppAmbientContexts();
 ```
 
-`AddAmbientContext()` registers every ambient context generated for the assembly. The individual generated methods, such as `AddClientIdContext()` and `AddTenantIdContext()`, remain available when selective registration is needed.
+The optional `AmbientContextRegistration` attribute generates one aggregate registration method for the assembly. When the attribute is omitted, no aggregate method is generated. Individual methods such as `AddClientIdContext()` and `AddTenantIdContext()` are always available.
 
 Generic host applications can register all generated contexts directly on `IHostBuilder`:
 
 ```csharp
 Host.CreateDefaultBuilder(args)
-    .AddAmbientContext();
+    .AddMyAppAmbientContexts();
 ```
 
-Inject the generated context runner and accessor:
+Inject the generated context and accessor interfaces:
 
 ```csharp
 public sealed class Worker
 {
-    private readonly ClientIdContext _clientIdContext;
+    private readonly IClientIdContext _clientIdContext;
     private readonly IClientIdAccessor _clientIdAccessor;
 
-    public Worker(ClientIdContext clientIdContext, IClientIdAccessor clientIdAccessor)
+    public Worker(IClientIdContext clientIdContext, IClientIdAccessor clientIdAccessor)
     {
         _clientIdContext = clientIdContext;
         _clientIdAccessor = clientIdAccessor;
@@ -72,9 +73,11 @@ public sealed class Worker
 }
 ```
 
+Generated context interfaces also provide synchronous `ExecuteAs*` overloads for `Action` and `Func<TResult>`. Asynchronous execution accepts Task-returning delegates, so ordinary `async` lambdas compile without delegate casts.
+
 ## Reading Current
 
-`Current` returns the value for the active ambient scope. Accessing `Current` outside a matching `ExecuteAs*Async` scope throws `AmbientContextMissingException`.
+`Current` returns the value for the active ambient scope. Accessing `Current` outside a matching `ExecuteAs*` or `ExecuteAs*Async` scope throws `AmbientContextMissingException`.
 
 `TryGetCurrent` and `CurrentOrDefault` are available for optional reads. Generated value-type accessors expose nullable `CurrentOrDefault`, for example `Guid?`.
 
@@ -159,6 +162,18 @@ The current analyzer rule inventory is maintained in:
 
 Generator diagnostics are maintained in the [generator diagnostics inventory](https://github.com/MarsArmories/AmbientContext/blob/main/src/AmbientContext.Generators/GeneratorDiagnostics.md).
 
+* [Shipped generator diagnostics](https://github.com/MarsArmories/AmbientContext/blob/main/src/AmbientContext.Generators/AnalyzerReleases.Shipped.md)
+* [Unshipped generator diagnostics](https://github.com/MarsArmories/AmbientContext/blob/main/src/AmbientContext.Generators/AnalyzerReleases.Unshipped.md)
+
+## Migrating From 1.x
+
+Version 2.0 intentionally reduces the public API surface:
+
+* Inject generated `I{Name}Context` interfaces instead of concrete `{Name}Context` classes.
+* Replace `AddAmbientContext()` with selective `Add{Name}Context()` calls, or opt into a uniquely named aggregate method with `AmbientContextRegistrationAttribute`.
+* Replace `ValueTask` delegates with Task-returning delegates.
+* Use `AmbientContextRuntime<TContext, TValue>` when directly consuming the low-level runtime API.
+
 ## Observability
 
 AmbientContext does not emit OpenTelemetry spans, scopes, or metrics by default.
@@ -167,11 +182,23 @@ Ambient values are often tenant, client, user, correlation, or workflow identifi
 
 Prefer adding metrics and spans at the application boundary where the ambient value has domain meaning. Consumer code can read generated accessors such as `IClientIdAccessor` and decide which values are safe to record, which should be hashed or bucketed, and which should never leave process memory.
 
+## Integration Patterns
+
+See the [integration patterns guide](docs/integration-patterns.md) for:
+
+* ASP.NET Core middleware and endpoint filters.
+* GraphQL request and resolver middleware.
+* GraphQL DataLoader batching considerations.
+* Message envelope and parallel-consumer patterns.
+* Multiple ambient values and fire-and-forget work.
+
 ## Resources
 
 * [GitHub repository](https://github.com/MarsArmories/AmbientContext)
 * [NuGet package](https://www.nuget.org/packages/MarsArmories.AmbientContext)
 * [Sample project](https://github.com/MarsArmories/AmbientContext/tree/main/samples/AmbientContext.Sample)
+* [ASP.NET Core sample](https://github.com/MarsArmories/AmbientContext/tree/main/samples/AmbientContext.AspNetCore.Sample)
+* [Messaging sample](https://github.com/MarsArmories/AmbientContext/tree/main/samples/AmbientContext.Messaging.Sample)
 * [Changelog](https://github.com/MarsArmories/AmbientContext/blob/main/CHANGELOG.md)
 * [Security policy](https://github.com/MarsArmories/AmbientContext/blob/main/SECURITY.md)
 * [MIT license](https://github.com/MarsArmories/AmbientContext/blob/main/LICENSE)

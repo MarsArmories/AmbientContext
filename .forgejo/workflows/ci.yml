@@ -59,7 +59,7 @@ jobs:
 
       - name: Upload pull request prerelease artifacts
         if: forgejo.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3.2.2-node20
         with:
           name: prerelease-packages-pr-${{ forgejo.event.pull_request.number }}
           retention-days: 7

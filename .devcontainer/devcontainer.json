@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "AmbientContext (.NET 10)",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:10.0-noble",
+
+  "init": true,
+
+  "containerEnv": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_NOLOGO": "1"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "JetBrains.resharper-code"
+      ]
+    }
+  },
+
+  "postCreateCommand": [
+    "dotnet",
+    "restore",
+    "AmbientContext.slnx"
+  ],
+  "remoteUser": "vscode"
+}
